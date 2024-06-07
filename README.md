@@ -1,0 +1,2 @@
+# othello_AI
+othello
