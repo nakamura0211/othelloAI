@@ -1,4 +1,5 @@
 from sys import setrecursionlimit
+from multiprocessing import Pool
 from othello import Othello, fromHistory
 from play.script_play import evaluate_board
 from random import choice
@@ -6,20 +7,22 @@ from math import inf
 
 setrecursionlimit(10**8)
 
+def _map_fn(t):
+    put,othello,color,depth=t
+    return mini_max(othello.history+[put],3-color,3-color,depth)
+
 def mini_max_play(othello: Othello, color,depth=2):
   ps=othello.possible_puts(color)
   best_score=-inf
   scores=[]
-  for put in ps:
-    score=-mini_max(othello.history+[put],3-color,3-color,depth)
-    if score>best_score:
-      best_score=score
-    scores.append(score)
+  with Pool(len(ps)) as p:
+    scores=p.map(_map_fn,[(put,othello,color,depth) for put in ps],2)
+    best_score=min(scores)
   return choice([ps[i] for i,j in enumerate(scores) if j==best_score])
-
+  
+  
 def mini_max_play_depth(depth:int):
   return lambda o,c:mini_max_play(o,c,depth)
-
   
 
 def mini_max(history,origin_color,color,depth):
