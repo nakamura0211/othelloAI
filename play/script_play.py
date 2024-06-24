@@ -41,9 +41,12 @@ def evaluate_board(board: list, color) -> int:
     oth=Othello()
     oth.board=board
     if oth.winner()==color:
-        return 10000
-    elif oth.winner==3-color:
-        return -10000
+        black=0
+        for i in range(8):
+            for j in range(8):
+                if board[i][j]==1:black+=1
+                elif board[i][j]==2:black-=1
+        return (black*1000)*(1 if color==1 else -1)
     #相手のおける場所が少ないほうが良い
     result=-len(oth.possible_puts(3-color))*5
     # 隅の列全部とったら大加点
