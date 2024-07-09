@@ -5,7 +5,7 @@ from play.human_play import human_play
 class Othello:
     dirs = [(0, -1), (1, -1), (1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0), (-1, -1)]
     colors = ["nothing", "black", "white"]
-
+    #TODO size
     def __init__(self) -> None:
         self.board = [[0] * 8 for i in range(8)]
         self.board[3][3] = 2
