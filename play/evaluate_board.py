@@ -1,4 +1,6 @@
-def evaluate_board(board: list, color) -> int:
+from othello import Othello
+
+def evaluate_board(board: list[list[int]], color:int) -> int:
     result = 0
     n = 0  # 置かれた石の数
     for y in range(8):

@@ -1,11 +1,11 @@
 from collections.abc import Callable
+from typing import Self
 from play.human_play import human_play
 
 
 class Othello:
     dirs = [(0, -1), (1, -1), (1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0), (-1, -1)]
     colors = ["nothing", "black", "white"]
-    #TODO size
     def __init__(self) -> None:
         self.board = [[0] * 8 for i in range(8)]
         self.board[3][3] = 2
@@ -45,7 +45,7 @@ class Othello:
         return True
 
     # 各dirの方向にひっくり返せる石の数
-    def reverse_len(self, x: int, y: int, color: int) -> list:  # O(N^2)
+    def reverse_len(self, x: int, y: int, color: int) -> list[int]:  # O(N^2)
         result = []
         if self.board[y][x] != 0:
             return [0] * 8
@@ -72,7 +72,7 @@ class Othello:
     def is_possible_to_put(self, x: int, y: int, color: int) -> bool:  # O(N^2)
         return len([i for i in self.reverse_len(x, y, color) if i != 0]) > 0
 
-    def possible_puts(self, color: int) -> list:  # O(N^4)
+    def possible_puts(self, color: int) -> list[tuple[int,int]]:  # O(N^4)
         ret = []
         for y in range(8):
             for x in range(8):
@@ -103,8 +103,8 @@ class Othello:
 
     def play(
         self,
-        black=human_play,
-        white=human_play,
+        black:Callable[[Self, int], tuple[int, int]] = human_play,
+        white:Callable[[Self, int], tuple[int, int]] = human_play,
         print: bool = True,
         guide: bool = True,
     ) -> int:  # O(N^6*player)=2.6*10^6*player
@@ -122,7 +122,7 @@ class Othello:
         return self.winner()
 
 
-def fromHistory(history: list) -> Othello:  # O(N^6)
+def fromHistory(history: list[tuple[int,int]]) -> Othello:  # O(N^6)
     o = Othello()
     c = 1
     for x, y in history:

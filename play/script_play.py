@@ -1,9 +1,8 @@
-from evaluate_board import evaluate_board
 from othello import Othello, fromHistory
 from random import choice
+from play.evaluate_board import evaluate_board
 
-
-def script_play(othello: Othello, color):
+def script_play(othello: Othello, color:int):
     ps = othello.possible_puts(color)
     opp_ps = othello.possible_puts(3 - color)
     scores = []
