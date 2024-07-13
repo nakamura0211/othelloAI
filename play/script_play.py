@@ -1,8 +1,8 @@
 from othello import Othello, fromHistory
 from random import choice
-from evaluate.evaluate_board_nkmr import evaluate_board_nkmr as evaluate_board
+from evaluate.evaluate_board_nkmr import evaluate_board_nkmr
 
-def script_play(othello: Othello, color:int):
+def script_play(othello: Othello, color:int,evaluate_board=evaluate_board_nkmr):
     ps = othello.possible_puts(color)
     opp_ps = othello.possible_puts(3 - color)
     scores = []
