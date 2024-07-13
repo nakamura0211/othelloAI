@@ -1,6 +1,6 @@
 from sys import setrecursionlimit
 from othello import Othello, fromHistory
-from play.script_play import evaluate_board
+from evaluate.evaluate_board_nkmr import evaluate_board_nkmr as evaluate_board
 from math import inf
 
 setrecursionlimit(10**8)
