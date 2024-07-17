@@ -1,6 +1,6 @@
 from collections.abc import Callable
 from typing import Self
-from play.human_play import human_play
+from play.terminal_play import terminal_play
 
 
 class Othello:
@@ -103,8 +103,8 @@ class Othello:
 
     def play(
         self,
-        black:Callable[[Self, int], tuple[int, int]] = human_play,
-        white:Callable[[Self, int], tuple[int, int]] = human_play,
+        black:Callable[[Self, int], tuple[int, int]] = terminal_play,
+        white:Callable[[Self, int], tuple[int, int]] = terminal_play,
         print: bool = True,
         guide: bool = True,
     ) -> int:  # O(N^6*player)=2.6*10^6*player

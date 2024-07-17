@@ -1,4 +1,4 @@
-def human_play(othello, color: int):
+def terminal_play(othello, color: int):
     x = -1
     y = -1
     print(othello.colors[color])
@@ -6,9 +6,6 @@ def human_play(othello, color: int):
         s = input()
         if not len(s) == 3 or not s[0].isdigit() or not s[1] == " " or not s[2].isdigit() :
             continue
-        t= map(int, s.split(" "))
-        lis=list(t)
-        x=lis[0]
-        y=lis[1]
+        x,y= map(int, s.split(" "))
 
     return x,y
