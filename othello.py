@@ -34,6 +34,22 @@ class Othello:
                 ret += "\n"
             print(ret)
 
+    def count(self)->tuple[int,int,int]:
+        blank=0
+        black=0
+        white=0
+        for y in range(8):
+            for x in range(8):
+                if self.board[y][x]==0:
+                    blank+=1
+                elif self.board[y][x]==1:
+                    black+=1
+                elif self.board[y][x]==2:
+                    white+=1
+        return blank,black,white
+
+
+
     def put(self, x: int, y: int, color: int) -> bool:  # N=8 O(N^2)
         rlen = self.reverse_len(x, y, color)
         if len([i for i in rlen if i != 0]) == 0:
