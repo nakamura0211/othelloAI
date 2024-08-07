@@ -92,10 +92,10 @@ othello.play(example_play)
   - 既にある機能を活用するためにも、Othelloクラスは理解して欲しいです。
 
 > [!Warning]
-> オセロのボードはothello.boardでアクセスできます。
-> 座標は**左上**が原点(x,y)=(0,0)でx軸は右向き,y軸は**下向き**です
-> そしてothello.boardは左の画像ように定義されます。
-> よって、(x,y)にアクセスするには**othello.board[y][x]** となることに注意してください
+> オセロのボードはothello.boardでアクセスできます。  
+> 座標は**左上**が原点(x,y)=(0,0)でx軸は右向き,y軸は**下向き**です。  
+> そしてothello.boardは左の画像ように定義されます。  
+> よって、(x,y)にアクセスするには**othello.board[y][x]** となることに注意してください。  
 >  ![alt text](images/image-1.png) ![alt text](images/image.png)
 
 
