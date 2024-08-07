@@ -2,7 +2,9 @@
 
 ## 概観
 ## クラス,関数関係依存図
-基本的に矢印は使う側→使われる側
+
+なにも書かれてなければ矢印は使う側→使われる側
+
 ```mermaid
 graph TD
 GUI_Othello --> |継承,GUI化| Othello
@@ -94,7 +96,7 @@ othello.play(example_play)
 > 座標は**左上**が原点(x,y)=(0,0)でx軸は右向き,y軸は**下向き**です
 > そしてothello.boardは左の画像ように定義されます。
 > よって、(x,y)にアクセスするには**othello.board[y][x]** となることに注意してください
->  ![alt text](image-1.png) ![alt text](image.png)
+>  ![alt text](images/image-1.png) ![alt text](images/image.png)
 
 
 
