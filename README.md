@@ -57,9 +57,23 @@ othello.play(black=terminal_play,white=random_play,print=True,guide=True)
 
 
 ### どうやってエージェント関数作るの？
-1. まず名前を決める.ここではexample_playとする
-2. play/example_play.pyを作成
-3. 下記をそこにコピペ
+##### 0.なにをするべきか理解する
+- エージェント関数は盤面の状況と自分の色を与えられると、どこに打つかを返す関数です
+- これは人が自分の色とオセロの盤面をみてどこに打つか決めるのと同じです
+
+```mermaid
+graph TD
+Othello --> |盤面等の状態| Agent
+Agent --> |どこに打つか| Othello
+```
+
+- 人工知能/AIとは人間の知能を模倣したものみたいな感じでふんわりと定義されています
+- 自分の考え方をAgent関数としてコードに起こしたり、あるいは人間には出来ない量の計算結果を用いて最強のAgent関数を作りましょう。
+
+
+##### 1. まず名前を決める.ここではexample_playとする
+##### 2. play/example_play.pyを作成
+##### 3. 下記をそこにコピペ
 
 ```python
 from othello import Othello
@@ -70,7 +84,7 @@ def example_play(othello: Othello, color:int):
     pos_puts=othello.possible_puts(color)
     return pos_puts[0]
 ```
-4. ルートディレクトリに適当にtest.pyファイルを作り以下をコピペ
+##### 4. ルートディレクトリに適当にtest.pyファイルを作り以下をコピペ
 
 test.py
 ```python
@@ -83,10 +97,10 @@ othello.play(example_play)
 - example_playと自分が対戦するコード
 - 戦いながらコーディングするとよい
 
-5. ターミナルで`python test.py`
+##### 5. ターミナルで`python test.py`
 - これでtest.pyが動く
 
-6. example_playを強くする
+##### 6. example_playを強くする
   - Othelloクラスに生えているメソッドを使ったり、オセロの盤面の状況を読み取ったりしてどこに打つかを決めて(x,y)をreturnする。
   - 既にある機能を活用するためにも、Othelloクラスは理解して欲しいです。
 
