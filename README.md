@@ -68,7 +68,7 @@ Agent --> |どこに打つか| Othello
 ```
 
 - 人工知能/AIとは人間の知能を模倣したものみたいな感じでふんわりと定義されています
-- 自分の考え方をAgent関数としてコードに起こしたり、あるいは人間には出来ない量の計算結果を用いて最強のAgent関数を作りましょう。
+- 自分の考え方をAgent関数としてコードに起こしたり、あるいは人間には出来ない量の計算を用いて最強のAgent関数を作りましょう。
 
 
 ##### 1. まず名前を決める.ここではexample_playとする
@@ -94,7 +94,7 @@ from play.example_play import example_play
 othello=Othello()
 othello.play(example_play)
 ```
-- example_playと自分が対戦するコード
+- example_playと自分が対戦するコード  
 - 戦いながらコーディングするとよい
 
 ##### 5. ターミナルで`python test.py`
@@ -120,9 +120,9 @@ othello.play(example_play)
 オセロの盤面を表す二次元配列です。
 
 ### Othello#history
-オセロの打たれた手の履歴のリストです。
-ex:`[[(3,4),(2,3)]]`
-また、othello.pyファイルにhistoryからOthelloを返す関数`fromHistory`があります
+オセロの打たれた手の履歴のリストです。  
+ex:`[[(3,4),(2,3)]]`  
+また、othello.pyファイルにhistoryからOthelloを返す関数`fromHistory`があります  
 
 
 
