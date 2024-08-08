@@ -25,7 +25,7 @@ evaluate_board_nkmr -->|パラメータの変数化| evaluate_board_nkmr_es
 ```
 
 ## links(あとで繋ぐ)
-- [Othelloクラス](#othelloクラスの説明)  
+- [Othelloクラスの説明](#othelloクラスの説明)  
 - [GUIOthelloクラスの説明](#gui_othello)
 - play/の説明  
 - evaluate/の説明  
