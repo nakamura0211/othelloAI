@@ -36,5 +36,10 @@ othello.play(mini_max_play(3),mini_max_play(4))
 ## alpha_beta_play
 alpha-beta木探索に従って打つ場所を決めます。alpha-beta木探索はmini-max木探索を効率化したアルゴリズムなので基本的にはmini_max_playよりalpha_beta_playを使ってください。使い方はmini_max_playと同じです。
 
+## 参照
+
+mini-max木探索,alpha_beta木探索については以下を参照してください
 
 
+- オセロAIの教科書 https://note.com/nyanyan_cubetech/n/n210cf134b8b1?magazine_key=m54104c8d2f12
+- ゼロから教えるゲーム木探索入門 https://qiita.com/thun-c/items/058743a25c37c87b8aa4
