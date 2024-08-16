@@ -121,14 +121,15 @@ class Othello:
         self,
         black:Callable[[Self, int], tuple[int, int]] = terminal_play,
         white:Callable[[Self, int], tuple[int, int]] = terminal_play,
-        print: bool = True,
+        doPrint: bool = True,
         guide: bool = True,
     ) -> int:  # O(N^6*player)=2.6*10^6*player
         c = 1
         while self.winner() is None:
-            if print:
+            if doPrint:
                 self.print(guide)
             if not self.is_possible_to_put_anywhere(c):
+                self.history.append(None)
                 c = 3 - c
             player = black if c == 1 else white
             x, y = player(self, c)
@@ -136,14 +137,22 @@ class Othello:
             self.history.append((x, y))
             c = 3 - c
         return self.winner()
-
+    
+    def copy(self)->Self:
+        o=Othello()
+        for y in range(8):
+            for x in range(8):
+                o.board[y][x]=self.board[y][x]
+        return o
 
 def fromHistory(history: list[tuple[int,int]]) -> Othello:  # O(N^6)
     o = Othello()
     c = 1
-    for x, y in history:
-        if not o.is_possible_to_put_anywhere(c):
-            c = 3 - c
+    for cood in history:
+        if cood is None:
+            c=3-c
+            continue
+        x,y=cood
         o.put(x, y, c)
         o.history.append((x,y))
         c = 3 - c
