@@ -11,7 +11,7 @@ def _map_fn(t):
     put,othello,color,depth,evaluate=t
     return mini_max(othello.history+[put],3-color,3-color,depth,evaluate)
 
-def mini_max_play(othello: Othello, color:int,depth:int=2,evaluate_board=evaluate_board_nkmr):
+def mini_max_play_core(othello: Othello, color:int,depth:int=2,evaluate_board=evaluate_board_nkmr):
   ps=othello.possible_puts(color)
   best_score=-inf
   scores=[]
@@ -21,8 +21,8 @@ def mini_max_play(othello: Othello, color:int,depth:int=2,evaluate_board=evaluat
   return choice([ps[i] for i,j in enumerate(scores) if j==best_score])
   
   
-def mini_max_play_depth(depth:int,evaluate_board=evaluate_board_nkmr):
-  return lambda o,c:mini_max_play(o,c,depth,evaluate_board)
+def mini_max_play(depth:int,evaluate_board=evaluate_board_nkmr):
+  return lambda o,c:mini_max_play_core(o,c,depth,evaluate_board)
   
 
 def mini_max(history:list[tuple[int,int]],origin_color:int,color:int,depth:int,evaluate_board=evaluate_board_nkmr):

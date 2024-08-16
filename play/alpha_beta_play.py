@@ -6,7 +6,7 @@ from math import inf
 setrecursionlimit(10**8)
 
 
-def alpha_beta_play(othello: Othello, color:int,depth:int=3,evaluate_board=evaluate_board_nkmr):
+def alpha_beta_play_core(othello: Othello, color:int,depth:int=3,evaluate_board=evaluate_board_nkmr):
   ps=othello.possible_puts(color)
   best=None
   alpha=-inf
@@ -18,8 +18,8 @@ def alpha_beta_play(othello: Othello, color:int,depth:int=3,evaluate_board=evalu
   return best
 
 
-def alpha_beta_play_depth(depth:int,evaluate_board=evaluate_board_nkmr):
-  return lambda o,c:alpha_beta_play(o,c,depth,evaluate_board)
+def alpha_beta_play(depth:int,evaluate_board=evaluate_board_nkmr):
+  return lambda o,c:alpha_beta_play_core(o,c,depth,evaluate_board)
 
 def alpha_beta(history:list[tuple[int,int]],origin_color:int,color:int,depth:int,alpha:int,beta:int,evaluate_board):
   othello=fromHistory(history)
