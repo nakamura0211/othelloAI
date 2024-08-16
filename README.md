@@ -135,13 +135,13 @@ def play(
         self,
         black:Callable[[Self, int], tuple[int, int]] = terminal_play,
         white:Callable[[Self, int], tuple[int, int]] = terminal_play,
-        print: bool = True,
+        doPrint: bool = True,
         guide: bool = True,
     ) -> int
 ```
 ### 引数
 - black,white エージェント関数を与えます
-- print Trueだと打ったあとにprintします
+- doPrint Trueだと打ったあとにprintします
 - guide Trueだとprintされた座標がわかりやすいようにprintします
 
 ### 返り値
@@ -207,6 +207,9 @@ ex:[1,0,3,0,0,1,0,0]
 ```python
 def put(self, x: int, y: int, color: int) -> bool
 ```
+
+## Othello#copy
+コピーします
 
 # GUI_Othello
 pygameを用いてOthelloをGUIで表示できるようにOthelloクラスを拡張したやつです。playメソッドのみを変更しています。
