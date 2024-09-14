@@ -1,4 +1,4 @@
-from othello import Othello, fromHistory
+from othello import Othello, from_history
 from random import choice
 from evaluate.evaluate_board_nkmr import evaluate_board_nkmr
 
@@ -9,7 +9,7 @@ def script_play(othello: Othello, color:int,evaluate_board=evaluate_board_nkmr):
     mx = -float("inf")
 
     for x, y in ps:
-        o = fromHistory(othello.history + [(x, y)])
+        o = from_history(othello.history + [(x, y)])
         score = evaluate_board(o.board, color)
         # 相手が置けない場所は減点
         if (x, y) not in opp_ps:

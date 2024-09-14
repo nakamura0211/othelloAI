@@ -121,12 +121,12 @@ class Othello:
         self,
         black:Callable[[Self, int], tuple[int, int]] = terminal_play,
         white:Callable[[Self, int], tuple[int, int]] = terminal_play,
-        doPrint: bool = True,
+        do_print: bool = True,
         guide: bool = True,
     ) -> int:  # O(N^6*player)=2.6*10^6*player
         c = 1
         while self.winner() is None:
-            if doPrint:
+            if do_print:
                 self.print(guide)
             if not self.is_possible_to_put_anywhere(c):
                 self.history.append(None)
@@ -145,7 +145,7 @@ class Othello:
                 o.board[y][x]=self.board[y][x]
         return o
 
-def fromHistory(history: list[tuple[int,int]]) -> Othello:  # O(N^6)
+def from_history(history: list[tuple[int,int]]) -> Othello:  # O(N^6)
     o = Othello()
     c = 1
     for cood in history:
