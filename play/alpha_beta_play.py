@@ -1,5 +1,5 @@
 from sys import setrecursionlimit
-from othello import Othello, fromHistory
+from othello import Othello, from_history
 from evaluate.evaluate_board_nkmr import evaluate_board_nkmr
 from math import inf
 
@@ -22,7 +22,7 @@ def alpha_beta_play(depth:int,evaluate_board=evaluate_board_nkmr):
   return lambda o,c:alpha_beta_play_core(o,c,depth,evaluate_board)
 
 def alpha_beta(history:list[tuple[int,int]],origin_color:int,color:int,depth:int,alpha:int,beta:int,evaluate_board):
-  othello=fromHistory(history)
+  othello=from_history(history)
   if othello.winner() is not None:
     if othello.winner()==origin_color:
       return 10000
