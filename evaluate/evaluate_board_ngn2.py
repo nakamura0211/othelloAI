@@ -1,5 +1,5 @@
 from othello import Othello
-evaluation_table = [
+evaluation_table2 = [
     [100,10,40,30,30,40,10,100],
     [10,5,8,6,6,8,5,10],
     [40,8,15,10,10,15,8,40],
@@ -9,7 +9,7 @@ evaluation_table = [
     [10,5,8,6,6,8,5,10],
     [100,10,40,30,30,40,10,100]
     ]
-def evaluate_board_ngn(board, color) :
+def evaluate_board_ngn2(board, color) :
     n = 0  
     for y in range(8):
         for x in range(8):
@@ -30,9 +30,7 @@ def evaluate_board_ngn(board, color) :
     for y in range(8):
         for x in range(8):
             if board[y][x] == color:
-                score += evaluation_table[y][x]
+                score += evaluation_table2[y][x]
             elif board[y][x] == opponent:
-                score -= evaluation_table[y][x]
+                score -= evaluation_table2[y][x]
     return score if  color == 1 else -score
-    
-    
