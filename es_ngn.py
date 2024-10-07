@@ -101,7 +101,7 @@ for gen in range(num_generations):
 
     
     for mutant in offspring:
-        if random.random() < 0.8:
+        if random.random() < 0.5:
             toolbox.mutate(mutant)
             del mutant.fitness.values
 
