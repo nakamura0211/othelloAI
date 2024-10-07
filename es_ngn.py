@@ -50,7 +50,7 @@ def othello_eval(individual):
         agent_1 = alpha_beta_play(0,evaluate_board_ngn2)
         evaluation_table = input_table(individual)        
         agent_2 = alpha_beta_play(0,evaluate_board_ngn)
-        a = othello.play(agent_2,agent_1)
+        a = othello.play(agent_2,agent_1,print = False)
         _,b,w=othello.count()
         res = b-w 
         if a == 1:
@@ -127,6 +127,12 @@ plt.show()
 
 print("Best Evaluation Table:", best_individual)
 
+
+##これで出来上がりました。ざこです
+# [9.309686802648422, -55.228733286729415, -22.841360389475902, -7.891116260892756
+# , 22.57822837847436, -27.68406246097886, 118.59463330412778, 107.08332483333382
+# , -49.993867933880345, 57.4276713400455, -71.17219667234166, -17.566181264443465
+# , -6.302710011742824, -73.75138380531219, -47.830920676357756, 31.044693419323078]
 
 
           
