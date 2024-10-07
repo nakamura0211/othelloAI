@@ -102,5 +102,5 @@ class GUI_Othello(Othello):
             if end_flag:
                 break
             pygame.display.update()
-
+        
         return winner

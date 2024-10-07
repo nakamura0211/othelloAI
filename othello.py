@@ -123,8 +123,9 @@ class Othello:
         white:Callable[[Self, int], tuple[int, int]] = terminal_play,
         do_print: bool = True,
         guide: bool = True,
+        first_color:int = 1
     ) -> int:  # O(N^6*player)=2.6*10^6*player
-        c = 1
+        c=first_color
         while self.winner() is None:
             if do_print:
                 self.print(guide)

@@ -5,6 +5,9 @@ from play.alpha_beta_play import alpha_beta_play
 from evaluate.evaluate_board_nkmr_es import evaluate_board_nkmr_es
 from time import perf_counter
 
+
+
+
 class StartsWithRandom:
             def __init__(self,agent,random_time=5):
                 self.agent=agent

@@ -3,9 +3,8 @@ import random
 from play.random_play import random_play
 import math
 def mcts_agent(othello:Othello,color:int):
-    board = othello.board
     puts = othello.possible_puts(color)
-    simulation_num = min((len(othello.history)+10)*60,1000)
+    simulation_num = 500
     win_number = [0]*(len(puts))
     chosen = [1]*(len(puts))
     uct_list = [0]*(len(puts))
