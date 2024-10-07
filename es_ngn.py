@@ -56,25 +56,23 @@ toolbox.register("individual", tools.initRepeat, creator.Individual, toolbox.att
 toolbox.register("population", tools.initRepeat, list, toolbox.individual)
 toolbox.register("evaluate", othello_eval)
 toolbox.register("mate", tools.cxBlend, alpha=0.5)
-toolbox.register("mutate", tools.mutGaussian, mu=0, sigma=0.5, indpb=0.6)
+toolbox.register("mutate", tools.mutGaussian, mu=[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], sigma=[20,20,20,20,20,20,20,20,20,20,20,20,20,20,20,20], indpb=0.6)
 toolbox.register("select", tools.selTournament, tournsize=3)
 
 
-population = toolbox.population(n=5)
 
-
-num_generations = 20
+num_generations = 10
 for gen in range(num_generations):
-    
+    pop = toolbox.population(n=5)
     
     
     if elite_individual is not None:
         elite_first_element.append(elite_individual[0])
-    elite_individual = list(tools.selBest(population, 1)[0])
+    elite_individual = list(tools.selBest(pop, 1)[0])
     
 
     
-    offspring = toolbox.select(population, len(population) - 1)
+    offspring = toolbox.select(pop, len(pop)-1 )
     offspring = list(map(toolbox.clone, offspring))
 
     
@@ -91,16 +89,17 @@ for gen in range(num_generations):
             del mutant.fitness.values
 
 
-    offspring.extend(list(tools.selBest(population, 1)))
+    offspring.extend(list(tools.selBest(pop, 1)))
 
-    fitnesses = list(map(toolbox.evaluate, offspring))
+    fitnesses = list(map(toolbox.evaluate, pop))
+    
     for ind, fit in zip(offspring, fitnesses):
         ind.fitness.values = fit
 
-    population[:] = offspring
+    pop[:] = offspring
 
     
-best_individual = tools.selBest(population, 1)[0]
+best_individual = tools.selBest(pop, 1)[0]
 print("\nBest Evaluation Table:", best_individual)
 
 plt.plot(range(len(elite_first_element)), elite_first_element, marker='o', linestyle='-', color='b')
