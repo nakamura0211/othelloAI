@@ -1,16 +1,35 @@
 import matplotlib.pyplot as plt
 from othello import Othello
 from evaluate.evaluate_board_ngn import evaluate_board_ngn
-from evaluate.evaluate_board_ngn import evaluation_table,evaluate_board_ngn
+from evaluate.evaluate_board_ngn import evaluate_board_ngn
 from evaluate.evaluate_board_ngn2 import evaluate_board_ngn2
-from evaluate.evaluate_board_ngn2 import evaluation_table2,evaluate_board_ngn2
+from evaluate.evaluate_board_ngn2 import evaluate_board_ngn2
 from evaluate.evaluate_board_nkmr import evaluate_board_nkmr
 from play.alpha_beta_play import alpha_beta_play
+from play.script_play import script_play
 import random
 from deap import base, creator, tools
-from deap import algorithms
 
-
+evaluation_table = [
+    [100,10,40,30,30,40,10,100],
+    [10,5,8,6,6,8,5,10],
+    [40,8,15,10,10,15,8,40],
+    [30,6,10,10,10,10,6,30],
+    [30,6,10,10,10,10,6,30],
+    [40,8,15,10,10,15,8,40],
+    [10,5,8,6,6,8,5,10],
+    [100,10,40,30,30,40,10,100]
+    ]
+evaluation_table2 = [
+    [100,10,40,30,30,40,10,100],
+    [10,5,8,6,6,8,5,10],
+    [40,8,15,10,10,15,8,40],
+    [30,6,10,10,10,10,6,30],
+    [30,6,10,10,10,10,6,30],
+    [40,8,15,10,10,15,8,40],
+    [10,5,8,6,6,8,5,10],
+    [100,10,40,30,30,40,10,100]
+    ]
 def input_table(individual):
         evaluation_table = [[0]*8 for _ in range(8)]
         for i in range(4):
@@ -32,17 +51,26 @@ def othello_eval(individual):
     global evaluation_table
     global evaluation_table2    
     othello = Othello()
+    
     evaluation_table2 = input_table(elite_individual)
     agent_1 = alpha_beta_play(0,evaluate_board_ngn2)
     evaluation_table = input_table(individual)        
     agent_2 = alpha_beta_play(0,evaluate_board_ngn)
+    
     a = othello.play(agent_2,agent_1,do_print = False)
+    
+    
     _,b,w=othello.count()
-    res = b-w 
+    resalt = b-w 
     if a == 1:
-        return 100+res,
+        fitness = 100+resalt
+        
+        return fitness,
     else:
-        return res,
+        fitness = resalt
+        
+        return fitness,
+
 
 elite_first_element = []
 elite_individual = None
@@ -60,11 +88,11 @@ toolbox.register("mutate", tools.mutGaussian, mu=[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 toolbox.register("select", tools.selTournament, tournsize=3)
 
 
-
-num_generations = 10
+pop = toolbox.population(n = 10)
+num_generations = 5000
 for gen in range(num_generations):
-    pop = toolbox.population(n=5)
-    
+    if gen%100 == 0:
+        print(gen*10)
     
     if elite_individual is not None:
         elite_first_element.append(elite_individual[0])
@@ -74,29 +102,34 @@ for gen in range(num_generations):
     
     offspring = toolbox.select(pop, len(pop)-1 )
     offspring = list(map(toolbox.clone, offspring))
-
     
+
+
     for child1, child2 in zip(offspring[::2], offspring[1::2]):
         if random.random() < 0.5:
             toolbox.mate(child1, child2)
             del child1.fitness.values
             del child2.fitness.values
+    
+    offspring.extend(list(tools.selBest(pop, 1)))
 
     
     for mutant in offspring:
         if random.random() < 0.5:
             toolbox.mutate(mutant)
             del mutant.fitness.values
-
-
-    offspring.extend(list(tools.selBest(pop, 1)))
-
-    fitnesses = list(map(toolbox.evaluate, pop))
+    fitnesses = list(map(toolbox.evaluate, offspring))
+    
+    
     
     for ind, fit in zip(offspring, fitnesses):
         ind.fitness.values = fit
 
     pop[:] = offspring
+
+    
+
+
 
     
 best_individual = tools.selBest(pop, 1)[0]
@@ -112,11 +145,7 @@ plt.show()
 print("Best Evaluation Table:", best_individual)
 
 
-##これで出来上がりました。ざこです
-# [9.309686802648422, -55.228733286729415, -22.841360389475902, -7.891116260892756
-# , 22.57822837847436, -27.68406246097886, 118.59463330412778, 107.08332483333382
-# , -49.993867933880345, 57.4276713400455, -71.17219667234166, -17.566181264443465
-# , -6.302710011742824, -73.75138380531219, -47.830920676357756, 31.044693419323078]
+
 
 
           
