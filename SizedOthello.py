@@ -15,6 +15,7 @@ class SizedOthello:
         self.board[size//2][size//2]=1
         self.board[size//2-1][size//2]=2
         self.board[size//2][size//2-1]=2
+        self.color=1
 
     def __str__(self) -> str:
         ret = ""
@@ -116,18 +117,18 @@ class SizedOthello:
             do_print: bool = True,
             guide: bool = True,
     ) -> int:  # O(N^6*player)=2.6*10^6*player
-        c = 1
+        self.color = 1
         while self.winner() is None:
             if do_print:
                 self.print(guide)
-            if not self.is_possible_to_put_anywhere(c):
+            if not self.is_possible_to_put_anywhere(self.color):
                 self.history.append(None)
-                c = 3 - c
-            player = black if c == 1 else white
-            x, y = player(self, c)
-            self.put(x, y, c)
+                self.color = 3 - self.color
+            player = black if self.color  == 1 else white
+            x, y = player(self, self.color )
+            self.put(x, y, self.color )
             self.history.append((x, y))
-            c = 3 - c
+            self.color = 3 - self.color
         return self.winner()
 
     def copy(self) -> Self:

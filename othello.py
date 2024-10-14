@@ -1,5 +1,7 @@
 from collections.abc import Callable
 from typing import Self
+
+from play.agent import Agent
 from play.terminal_play import terminal_play
 
 
@@ -12,6 +14,8 @@ class Othello:
         self.board[4][4] = 2
         self.board[3][4] = 1
         self.board[4][3] = 1
+        self.color=1
+        self.size=8
         self.history = []
 
     def __str__(self) -> str:
@@ -119,24 +123,24 @@ class Othello:
 
     def play(
         self,
-        black:Callable[[Self, int], tuple[int, int]] = terminal_play,
-        white:Callable[[Self, int], tuple[int, int]] = terminal_play,
+        black:Callable[[Self, int], tuple[int, int]] | Agent = terminal_play,
+        white:Callable[[Self, int], tuple[int, int]] | Agent = terminal_play,
         do_print: bool = True,
         guide: bool = True,
         first_color:int = 1
     ) -> int:  # O(N^6*player)=2.6*10^6*player
-        c=first_color
+        self.color=first_color
         while self.winner() is None:
             if do_print:
                 self.print(guide)
-            if not self.is_possible_to_put_anywhere(c):
+            if not self.is_possible_to_put_anywhere(self.color):
                 self.history.append(None)
-                c = 3 - c
-            player = black if c == 1 else white
-            x, y = player(self, c)
-            self.put(x, y, c)
+                self.color = 3 - self.color
+            player = black if self.color == 1 else white
+            x, y = player(self, self.color)
+            self.put(x, y, self.color)
             self.history.append((x, y))
-            c = 3 - c
+            self.color = 3 - self.color
         return self.winner()
     
     def copy(self)->Self:

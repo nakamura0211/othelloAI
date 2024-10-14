@@ -1,8 +1,7 @@
 from othello import Othello
-from play.random_play import random_play
-from play.script_play import script_play
-from play.alpha_beta_play import alpha_beta_play
-from evaluate.evaluate_board_nkmr_es import evaluate_board_nkmr_es
+from play.DQNAgent import DqnAgent
+from play.random_play import random_play, RandomAgent
+from play.alpha_beta_play import alpha_beta_play, AlphaBetaAgent
 from time import perf_counter
 
 
@@ -21,10 +20,11 @@ class StartsWithRandom:
 
 
 j=0
-attempt_number=10
+attempt_number=1000
 
-target=evaluate_board_nkmr_es()
-opponent=StartsWithRandom(alpha_beta_play(2))
+target=DqnAgent()
+target.load("model/model1500.keras")
+opponent=RandomAgent()
 
 start_time=perf_counter()
 for i in range(1,attempt_number+1):

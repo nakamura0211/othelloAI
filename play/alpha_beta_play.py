@@ -1,7 +1,11 @@
 from sys import setrecursionlimit
+
+from OthelloEnv import decode_state
 from othello import Othello, from_history
 from evaluate.evaluate_board_nkmr import evaluate_board_nkmr
 from math import inf
+
+from play.agent import Agent
 
 setrecursionlimit(10**8)
 
@@ -16,6 +20,18 @@ def alpha_beta_play_core(othello: Othello, color:int,depth:int=3,evaluate_board=
       best=put
       alpha=score
   return best
+
+class AlphaBetaAgent(Agent):
+  def __init__(self, depth:int, evaluate_board=evaluate_board_nkmr):
+    self.depth=depth
+    self.evaluate_board=evaluate_board
+
+  def __call__(self,othello:Othello,color:int)->tuple[int,int]:
+    return alpha_beta_play_core(othello,color,self.depth,self.evaluate_board)
+
+  def act(self, state:list[list[list[int]]])->tuple[int,int]:
+    othello=decode_state(state)
+    return alpha_beta_play_core(othello,othello.color,self.depth,self.evaluate_board)
 
 
 def alpha_beta_play(depth:int,evaluate_board=evaluate_board_nkmr):
