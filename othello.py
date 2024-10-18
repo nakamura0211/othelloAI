@@ -148,6 +148,7 @@ class Othello:
         for y in range(8):
             for x in range(8):
                 o.board[y][x]=self.board[y][x]
+        o.color=self.color
         return o
 
 def from_history(history: list[tuple[int,int]]) -> Othello:  # O(N^6)

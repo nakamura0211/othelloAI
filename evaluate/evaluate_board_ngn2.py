@@ -1,16 +1,8 @@
 from othello import Othello
-evaluation_table2 = [
-    [100,10,40,30,30,40,10,100],
-    [10,5,8,6,6,8,5,10],
-    [40,8,15,10,10,15,8,40],
-    [30,6,10,10,10,10,6,30],
-    [30,6,10,10,10,10,6,30],
-    [40,8,15,10,10,15,8,40],
-    [10,5,8,6,6,8,5,10],
-    [100,10,40,30,30,40,10,100]
-    ]
+from es_ngn import evaluation_table2,othello_eval
 
 def evaluate_board_ngn2(board, color) :
+    
     n = 0  
     for y in range(8):
         for x in range(8):
@@ -28,6 +20,7 @@ def evaluate_board_ngn2(board, color) :
 
     score = 0
     opponent = 3-color
+    
     for y in range(8):
         for x in range(8):
             if board[y][x] == color:
