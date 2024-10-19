@@ -3,19 +3,22 @@ from typing import Self
 
 from play.agent import Agent
 from play.terminal_play import terminal_play
+import OthelloEnv
+import numpy as np
 
 
 class Othello:
     dirs = [(0, -1), (1, -1), (1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0), (-1, -1)]
     colors = ["nothing", "black", "white"]
+
     def __init__(self) -> None:
         self.board = [[0] * 8 for i in range(8)]
         self.board[3][3] = 2
         self.board[4][4] = 2
         self.board[3][4] = 1
         self.board[4][3] = 1
-        self.color=1
-        self.size=8
+        self.color = 1
+        self.size = 8
         self.history = []
 
     def __str__(self) -> str:
@@ -38,21 +41,19 @@ class Othello:
                 ret += "\n"
             print(ret)
 
-    def count(self)->tuple[int,int,int]:
-        blank=0
-        black=0
-        white=0
+    def count(self) -> tuple[int, int, int]:
+        blank = 0
+        black = 0
+        white = 0
         for y in range(8):
             for x in range(8):
-                if self.board[y][x]==0:
-                    blank+=1
-                elif self.board[y][x]==1:
-                    black+=1
-                elif self.board[y][x]==2:
-                    white+=1
-        return blank,black,white
-
-
+                if self.board[y][x] == 0:
+                    blank += 1
+                elif self.board[y][x] == 1:
+                    black += 1
+                elif self.board[y][x] == 2:
+                    white += 1
+        return blank, black, white
 
     def put(self, x: int, y: int, color: int) -> bool:  # N=8 O(N^2)
         rlen = self.reverse_len(x, y, color)
@@ -92,7 +93,7 @@ class Othello:
     def is_possible_to_put(self, x: int, y: int, color: int) -> bool:  # O(N^2)
         return len([i for i in self.reverse_len(x, y, color) if i != 0]) > 0
 
-    def possible_puts(self, color: int) -> list[tuple[int,int]]:  # O(N^4)
+    def possible_puts(self, color: int) -> list[tuple[int, int]]:  # O(N^4)
         ret = []
         for y in range(8):
             for x in range(8):
@@ -123,43 +124,44 @@ class Othello:
 
     def play(
         self,
-        black:Callable[[Self, int], tuple[int, int]] | Agent = terminal_play,
-        white:Callable[[Self, int], tuple[int, int]] | Agent = terminal_play,
+        black: Callable[[Self, int], tuple[int, int]] | Agent = terminal_play,
+        white: Callable[[Self, int], tuple[int, int]] | Agent = terminal_play,
         do_print: bool = True,
         guide: bool = True,
-        first_color:int = 1
+        first_color: int = 1,
     ) -> int:  # O(N^6*player)=2.6*10^6*player
-        self.color=first_color
-        while self.winner() is None:
+        self.color = first_color
+        state = OthelloEnv.othello_to_state(self)
+        done = False
+        while not done:
             if do_print:
-                self.print(guide)
-            if not self.is_possible_to_put_anywhere(self.color):
-                self.history.append(None)
-                self.color = 3 - self.color
-            player = black if self.color == 1 else white
-            x, y = player(self, self.color)
-            self.put(x, y, self.color)
-            self.history.append((x, y))
-            self.color = 3 - self.color
-        return self.winner()
-    
-    def copy(self)->Self:
-        o=Othello()
+                print(OthelloEnv.state_to_str(state))
+            color = state[2][0][0] + 1
+            agent = black if color == 1 else white
+            action = agent.act(state)
+            next_state, _, done = OthelloEnv.step(state, action)
+            state = next_state
+        _, black, white = OthelloEnv.count(state)
+        return np.argmax([0, black, white])
+
+    def copy(self) -> Self:
+        o = Othello()
         for y in range(8):
             for x in range(8):
-                o.board[y][x]=self.board[y][x]
-        o.color=self.color
+                o.board[y][x] = self.board[y][x]
+        o.color = self.color
         return o
 
-def from_history(history: list[tuple[int,int]]) -> Othello:  # O(N^6)
+
+def from_history(history: list[tuple[int, int]]) -> Othello:  # O(N^6)
     o = Othello()
     c = 1
     for cood in history:
         if cood is None:
-            c=3-c
+            c = 3 - c
             continue
-        x,y=cood
+        x, y = cood
         o.put(x, y, c)
-        o.history.append((x,y))
+        o.history.append((x, y))
         c = 3 - c
     return o
