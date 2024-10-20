@@ -1,10 +1,8 @@
 import sys
 
 import pygame.locals
-from othello import Othello
 import pygame
 from pygame.locals import *
-from collections.abc import Callable
 import math
 import OthelloEnv
 from type import Agent
@@ -14,14 +12,9 @@ class GUI_Othello:
     def __init__(self) -> None:
         super().__init__()
 
-    def play(
-        self,
-        black: Agent | None = None,
-        white: Agent | None = None,
-    ):
+    def play(self, black: Agent | None = None, white: Agent | None = None, size=6):
         pygame.init()
         screen = pygame.display.set_mode((600, 600))
-        size = 6
         state = OthelloEnv.reset(size)
         pos_puts = [
             OthelloEnv.action_to_cord(state, action)
@@ -30,10 +23,10 @@ class GUI_Othello:
         winner = -1
         end_flag = False
         history = []
-        color = 1
+        color = 0
         # ゲームループ
         while True:
-            player = black if color == 1 else white
+            player = black if color == 0 else white
             screen.fill((0, 155, 0))
             # 一手前の手をハイライト
             if len(history) > 0:
@@ -65,6 +58,8 @@ class GUI_Othello:
             pygame.display.update()
             if player is not None:
                 action = player.act(state)
+                print(color)
+                print(action)
                 next_state, reward, done = OthelloEnv.step(state, action)
                 state = next_state
                 x, y = OthelloEnv.action_to_cord(state, action)
@@ -114,5 +109,7 @@ class GUI_Othello:
             if end_flag:
                 break
             pygame.display.update()
+        while True:
+            pass
 
         return winner

@@ -9,8 +9,8 @@ dirs = np.array([[0, -1], [1, -1], [1, 0], [1, 1], [0, 1], [-1, 1], [-1, 0], [-1
 def play(black: Agent, white: Agent, init_state: State | None = None, do_print=True):
     if init_state is None:
         init_state = reset(8)
-    done = False
     state = init_state.copy()
+    done = is_done(state)
     while not done:
         if do_print:
             print(state_to_str(state, True))
@@ -141,7 +141,21 @@ def count(state: State) -> tuple[int, int, int]:
     return blank, black, white
 
 
-def winner(state: State) -> int:
+def is_done(state: State) -> bool:
+    if len(valid_actions(state)) == 0:
+        return True
+    size = state.shape[2]
+    new = state.copy()
+    if state[2, 0, 0] == 0:
+        new[2] = np.ones((size, size), dtype=np.uint8)
+    else:
+        new[2] = np.zeros((size, size), dtype=np.uint8)
+    return len(valid_actions(new)) == 0
+
+
+def winner(state: State) -> int | None:
+    if not is_done(state):
+        return None
     _, black, white = count(state)
     if black == white:
         return 0
