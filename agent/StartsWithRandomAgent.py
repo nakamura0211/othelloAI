@@ -1,5 +1,5 @@
-from type import Agent, State, Action
-from play.random_play import RandomAgent
+from domain.models import *
+from agent.RandomAgent import RandomAgent
 
 
 class StartsWithRandomAgent(Agent):
