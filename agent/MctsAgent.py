@@ -176,7 +176,7 @@ class MctsNode:
         while nx_child.children != []:
             nx_child = nx_child.choise_best_child()
 
-        if nx_child.chosen > 5:
+        if nx_child.chosen > 20:
             nx_child.expand()
         return nx_child
 
@@ -187,7 +187,7 @@ class MctsNode:
             MctsNode.random_agent,
             init_state=self.state,
             do_print=False,
-        )
+        ).reverse()
 
         self.chosen += 1
         if winner == self.state.color:

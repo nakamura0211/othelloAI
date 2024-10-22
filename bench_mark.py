@@ -9,12 +9,14 @@ from time import perf_counter
 from tqdm import tqdm
 import ray
 
-target_agent = MctsAgent(300)
-opp_agent = MctsAgent(300)
+target_agent = StartsWithRandomAgent(MctsAgent(1000, 1), 10)
+opp_agent = AlphaBetaAgent(2)  # MctsAgent(1000, 1)
 simulation_times = 10
 black_win = 0
 white_win = 0
-for i in tqdm(range(1, simulation_times + 1)):
+for i in tqdm(
+    range(1, simulation_times + 1), desc=f"target:{black_win} opp:{white_win}"
+):
     winner = OthelloEnv.play(target_agent, opp_agent, do_print=False)
     if winner == Color.BLACK:
         black_win += 1
@@ -27,7 +29,9 @@ print(
 black_win = 0
 white_win = 0
 
-for i in tqdm(range(1, simulation_times + 1)):
+for i in tqdm(
+    range(1, simulation_times + 1), desc=f"target:{white_win} opp:{black_win}"
+):
     winner = OthelloEnv.play(opp_agent, target_agent, do_print=False)
     if winner == Color.BLACK:
         black_win += 1
