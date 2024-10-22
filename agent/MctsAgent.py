@@ -5,49 +5,72 @@ from domain.models import *
 import domain.OthelloEnv as OthelloEnv
 import math
 import numpy as np
-from tqdm import tqdm
 from domain.models import *
 from agent.RandomAgent import RandomAgent
 import ray
+import tqdm
+from ray.experimental import tqdm_ray
+from time import perf_counter
 
 if not ray.is_initialized:
     ray.init(num_cpus=4)
 
 
 class MctsAgent(Agent):
-    def __init__(self, playout_num: int, verbose: int = 0) -> None:
+    def __init__(
+        self, playout_num: int, verbose: int = 0, use_ray: bool = True
+    ) -> None:
         self.playout_num = playout_num
         self.verbose = verbose
+        self.use_ray = use_ray
 
     @staticmethod
     @ray.remote
-    def mcts_playout(mcts_node, playout_num: int):
-        for _ in range(playout_num):
+    def mcts_playout(mcts_node, playout_num: int, verbose: int = 0):
+        for _ in (
+            tqdm_ray.tqdm(range(playout_num)) if verbose > 0 else range(playout_num)
+        ):
             mcts_node.search_node_must_be_playouted().playout()
         return mcts_node
 
-    def act(self, state: State) -> Action:
+    def act_with_ray(self, state: State) -> Action:
         root_node = MctsNode([], state)
         root_node.expand()
 
         each_playout_num = self.playout_num // 4
         refs = [
-            MctsAgent.mcts_playout.remote(root_node, each_playout_num),
-            MctsAgent.mcts_playout.remote(root_node, each_playout_num),
-            MctsAgent.mcts_playout.remote(root_node, each_playout_num),
-            MctsAgent.mcts_playout.remote(root_node, each_playout_num),
+            MctsAgent.mcts_playout.remote(root_node, each_playout_num, self.verbose),
+            MctsAgent.mcts_playout.remote(root_node, each_playout_num, self.verbose),
+            MctsAgent.mcts_playout.remote(root_node, each_playout_num, self.verbose),
+            MctsAgent.mcts_playout.remote(root_node, each_playout_num, self.verbose),
         ]
         # print(root_node, type(root_node))
         nodes: list[MctsNode] = ray.get(refs)
         for node in nodes:
             for i in range(len(node.children)):
                 root_node.children[i].chosen += node.children[i].chosen
-        # 並列化で2倍速ぐらい?
-        # for _ in range((self.playout_num)):
-        #    root_node.search_node_must_be_playouted().playout()
         return OthelloEnv.valid_actions(state)[
             np.argmax([child.chosen for child in root_node.children])
         ]
+
+    def act_without_ray(self, state: State) -> Action:
+        root_node = MctsNode([], state)
+        for _ in (
+            tqdm.tqdm(range(self.playout_num))
+            if self.verbose > 0
+            else range(self.playout_num)
+        ):
+            root_node.search_node_must_be_playouted().playout()
+        return OthelloEnv.valid_actions(state)[
+            np.argmax([child.chosen for child in root_node.children])
+        ]
+
+    def act(self, state: State) -> Action:
+        if self.use_ray:
+            action = self.act_with_ray(state)
+        else:
+            action = self.act_without_ray(state)
+        return action
 
 
 class McAgent(Agent):
