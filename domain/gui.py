@@ -8,7 +8,12 @@ from domain.models import *
 from domain import OthelloEnv
 
 
-def play(black: Agent | None = None, white: Agent | None = None, size=SIZE):
+def play(
+    black: Agent | None = None,
+    white: Agent | None = None,
+    size=SIZE,
+    get_policy: Policy = None,
+):
     pygame.init()
     screen = pygame.display.set_mode((600, 600))
     state = OthelloEnv.reset()
@@ -16,6 +21,7 @@ def play(black: Agent | None = None, white: Agent | None = None, size=SIZE):
     winner = -1
     end_flag = False
     history = []
+    policy_cache = (state, None)
     # ゲームループ
     while True:
         player = black if state.color == Color.BLACK else white
@@ -29,6 +35,26 @@ def play(black: Agent | None = None, white: Agent | None = None, size=SIZE):
                 Rect(44 + 64 * x, 44 + 64 * y, 64, 64),
             )
         # 枠線
+
+        if get_policy is not None:
+            if state.color != policy_cache[0] or policy_cache[1] is None:
+                policy: np.ndarray = get_policy(state)[0]
+                policy = policy - np.average(policy)
+                policy = policy / np.max(np.abs(policy)) * 10
+                print(policy)
+                policy_cache = (state.color, policy)
+            else:
+                policy = policy_cache[1]
+
+            for y in range(size):
+                for x in range(size):
+                    p = policy[Action(x, y).index]
+                    if p > 0:
+                        c = (0, 180, min(p * 255, 255))
+                    else:
+                        c = (min(-p * 255, 255), 180, 0)
+                    # print(c)
+                    pygame.draw.rect(screen, c, Rect(44 + 64 * x, 44 + 64 * y, 64, 64))
         length = 64 * size + 44
         for i in range(size + 1):
             pygame.draw.line(
@@ -38,13 +64,14 @@ def play(black: Agent | None = None, white: Agent | None = None, size=SIZE):
             pygame.draw.line(
                 screen, (0, 0, 0), (44, i * 64 + 44), (length, i * 64 + 44), 1
             )
-        # オセロの石
+            # オセロの石
         for y in range(size):
             for x in range(size):
                 if state.board[y][x] == 0:
                     continue
                 c = (0, 0, 0) if state.board[y][x] == 1 else (255, 255, 255)
                 pygame.draw.circle(screen, c, (76 + x * 64, 76 + y * 64), 25)
+
         # 描画
         pygame.display.update()
         if player is not None:

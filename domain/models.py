@@ -20,9 +20,9 @@ class Color(IntEnum):
             return Color.BLACK
 
 
-SIZE = 8
+SIZE = 6
 Board = list[list[Color]]
-BoardImage = np.ndarray[np.ndarray[np.ndarray[np.uint8]]]
+BoardImage = np.ndarray[np.ndarray[np.ndarray[np.uint8]]]  # (SIZE,SIZE,3)
 
 
 @dataclass
@@ -30,8 +30,27 @@ class State:
     board: Board
     color: Color
 
-    def to_image() -> BoardImage:
-        pass
+    @staticmethod
+    def from_image(image: BoardImage):
+        board = [[0] * SIZE for _ in range(SIZE)]
+        for x in range(SIZE):
+            for y in range(SIZE):
+                if image[y, x, 0] == 1:
+                    board[y][x] = 1
+                elif image[y, x, 1] == 1:
+                    board[y][x] = 2
+        return State(board, image[0, 0, 2])
+
+    def to_image(self) -> BoardImage:
+        image = np.zeros((SIZE, SIZE, 3))
+        for x in range(SIZE):
+            for y in range(SIZE):
+                if self.board[y][x] == 1:
+                    image[y, x, 0] = 1
+                elif self.board[y][x] == 2:
+                    image[y, x, 1] = 1
+                image[y, x, 2] = self.color - 1
+        return image
 
     def copy(self, board=None, color=None):
         return State(
@@ -55,6 +74,7 @@ class Action:
 
 EvaluateState = Callable[[State], float]
 EvaluateAction = Callable[[State, Action], float]
+Policy = Callable[[State], np.ndarray[np.ndarray[np.float32]]]
 
 
 class Agent(abc.ABC):

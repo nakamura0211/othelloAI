@@ -5,7 +5,9 @@ from domain.models import *
 dirs = [(0, -1), (1, -1), (1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0), (-1, -1)]
 
 
-def play(black: Agent, white: Agent, init_state: State | None = None, do_print=True):
+def play(
+    black: Agent, white: Agent, init_state: State | None = None, do_print=True
+) -> State:
     if init_state is None:
         init_state = reset()
     state = init_state.copy()
@@ -15,16 +17,15 @@ def play(black: Agent, white: Agent, init_state: State | None = None, do_print=T
             print(state_to_str(state, True))
         agent = black if state.color == Color.BLACK else white
         action = agent.act(state)
-        next_state, reward, done = step(state, action)
-        state = next_state
+        state, reward, done = step(state, action)
     if do_print:
         print(state_to_str(state, True))
-    return winner(state)
+    return state
 
 
 def step(
     state: State, action: Action
-) -> tuple[State, int, bool]:  # next_state,reward,done
+) -> tuple[State, float, bool]:  # next_state,reward,done
     next_state = put(state, action)
     if next_state is None:
         raise ValueError(
@@ -36,6 +37,8 @@ valid actions were {[i.cord for i in valid_actions(state)]}
         )
     if len(valid_actions(next_state)) == 0:
         _, black, white = count(state)
+        reward = black - white if state.color == Color.BLACK else white - black
+        return next_state, reward / SIZE / SIZE, True
         if black == white:
             return next_state, 0, True
         if (state.color == Color.BLACK and black > white) or (

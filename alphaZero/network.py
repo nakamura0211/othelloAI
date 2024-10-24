@@ -1,19 +1,17 @@
 import numpy as np
 import tensorflow as tf
-#import tensorflow.keras.layers as kl
-#from tensorflow.keras.regularizers import l2
-#from tensorflow.keras.activations import relu
+
+# import tensorflow.keras.layers as kl
+# from tensorflow.keras.regularizers import l2
+# from tensorflow.keras.activations import relu
 import keras._tf_keras.keras.layers as kl
 from keras._tf_keras.keras.regularizers import l2
 from keras._tf_keras.keras.activations import relu
 from keras._tf_keras.keras import Model
 
 
-
-
 class SimpleCNN(Model):
-    """ See https://github.com/suragnair/alpha-zero-general/
-    """
+    """See https://github.com/suragnair/alpha-zero-general/"""
 
     def __init__(self, action_space, filters=512, use_bias=False):
 
@@ -22,16 +20,16 @@ class SimpleCNN(Model):
         self.action_space = action_space
         self.filters = filters
 
-        self.conv1 = kl.Conv2D(filters, 3, padding='same', use_bias=use_bias)
+        self.conv1 = kl.Conv2D(filters, 3, padding="same", use_bias=use_bias)
         self.bn1 = kl.BatchNormalization()
 
-        self.conv2 = kl.Conv2D(filters, 3, padding='same', use_bias=use_bias)
+        self.conv2 = kl.Conv2D(filters, 3, padding="same", use_bias=use_bias)
         self.bn2 = kl.BatchNormalization()
 
-        self.conv3 = kl.Conv2D(filters, 3, padding='valid', use_bias=use_bias)
+        self.conv3 = kl.Conv2D(filters, 3, padding="valid", use_bias=use_bias)
         self.bn3 = kl.BatchNormalization()
 
-        self.conv4 = kl.Conv2D(filters, 3, padding='valid', use_bias=use_bias)
+        self.conv4 = kl.Conv2D(filters, 3, padding="valid", use_bias=use_bias)
         self.bn4 = kl.BatchNormalization()
 
         self.flat = kl.Flatten()
@@ -44,12 +42,12 @@ class SimpleCNN(Model):
         self.bn6 = kl.BatchNormalization()
         self.drop6 = kl.Dropout(0.3)
 
-        self.pi = kl.Dense(self.action_space, activation='softmax')
+        self.pi = kl.Dense(self.action_space, activation="softmax")
 
-        self.value =  kl.Dense(1, activation='tanh')
+        self.value = kl.Dense(1, activation="tanh")
 
     def call(self, x, training=False):
-
+        print(x.shape)
         x = relu(self.bn1(self.conv1(x), training=training))
         x = relu(self.bn2(self.conv2(x), training=training))
         x = relu(self.bn3(self.conv3(x), training=training))
@@ -81,8 +79,8 @@ class AlphaZeroResNet(tf.keras.Model):
 
     def __init__(self, action_space, n_blocks=3, filters=256, use_bias=False):
         """
-            Note:
-            In AlphaZero Go paper, n_blocks = 20 (or 40) and filters = 256
+        Note:
+        In AlphaZero Go paper, n_blocks = 20 (or 40) and filters = 256
         """
         super(AlphaZeroResNet, self).__init__()
 
@@ -90,35 +88,52 @@ class AlphaZeroResNet(tf.keras.Model):
         self.filters = filters
         self.n_blocks = n_blocks
 
-        self.conv1 = kl.Conv2D(filters, kernel_size=3, padding="same",
-                               use_bias=use_bias, kernel_regularizer=l2(0.001),
-                               kernel_initializer="he_normal")
+        self.conv1 = kl.Conv2D(
+            filters,
+            kernel_size=3,
+            padding="same",
+            use_bias=use_bias,
+            kernel_regularizer=l2(0.001),
+            kernel_initializer="he_normal",
+        )
         self.bn1 = kl.BatchNormalization()
 
         #: residual tower
         for n in range(self.n_blocks):
-            setattr(self, f"resblock{n}",
-                    ResBlock(filters=self.filters, use_bias=use_bias))
+            setattr(
+                self, f"resblock{n}", ResBlock(filters=self.filters, use_bias=use_bias)
+            )
 
         #: policy head
-        self.conv_p = kl.Conv2D(2, kernel_size=1,
-                                use_bias=use_bias, kernel_regularizer=l2(0.001),
-                                kernel_initializer="he_normal")
+        self.conv_p = kl.Conv2D(
+            2,
+            kernel_size=1,
+            use_bias=use_bias,
+            kernel_regularizer=l2(0.001),
+            kernel_initializer="he_normal",
+        )
         self.bn_p = kl.BatchNormalization()
         self.flat_p = kl.Flatten()
-        self.logits = kl.Dense(action_space,
-                               kernel_regularizer=l2(0.001),
-                               kernel_initializer="he_normal")
+        self.logits = kl.Dense(
+            action_space, kernel_regularizer=l2(0.001), kernel_initializer="he_normal"
+        )
 
         #: value head
-        self.conv_v = kl.Conv2D(1, kernel_size=1,
-                                use_bias=use_bias, kernel_regularizer=l2(0.001),
-                                kernel_initializer="he_normal")
+        self.conv_v = kl.Conv2D(
+            1,
+            kernel_size=1,
+            use_bias=use_bias,
+            kernel_regularizer=l2(0.001),
+            kernel_initializer="he_normal",
+        )
         self.bn_v = kl.BatchNormalization()
         self.flat_v = kl.Flatten()
-        self.value = kl.Dense(1, activation="tanh",
-                              kernel_regularizer=l2(0.001),
-                              kernel_initializer="he_normal")
+        self.value = kl.Dense(
+            1,
+            activation="tanh",
+            kernel_regularizer=l2(0.001),
+            kernel_initializer="he_normal",
+        )
 
     def call(self, x, training=False):
 
@@ -154,13 +169,23 @@ class ResBlock(tf.keras.layers.Layer):
     def __init__(self, filters, use_bias):
         super(ResBlock, self).__init__()
 
-        self.conv1 = kl.Conv2D(filters, kernel_size=3, padding="same",
-                               use_bias=use_bias, kernel_regularizer=l2(0.001),
-                               kernel_initializer="he_normal")
+        self.conv1 = kl.Conv2D(
+            filters,
+            kernel_size=3,
+            padding="same",
+            use_bias=use_bias,
+            kernel_regularizer=l2(0.001),
+            kernel_initializer="he_normal",
+        )
         self.bn1 = kl.BatchNormalization()
-        self.conv2 = kl.Conv2D(filters, kernel_size=3, padding="same",
-                               use_bias=use_bias, kernel_regularizer=l2(0.001),
-                               kernel_initializer="he_normal")
+        self.conv2 = kl.Conv2D(
+            filters,
+            kernel_size=3,
+            padding="same",
+            use_bias=use_bias,
+            kernel_regularizer=l2(0.001),
+            kernel_initializer="he_normal",
+        )
         self.bn2 = kl.BatchNormalization()
 
     def call(self, x, training=False):
@@ -184,6 +209,6 @@ if __name__ == "__main__":
     x = x[np.newaxis, ...]
     print(x.shape)
     action_space = othello.N_ROWS * othello.N_COLS
-    #network = AlphaZeroResNet(action_space=action_space, n_blocks=5, filters=64)
+    # network = AlphaZeroResNet(action_space=action_space, n_blocks=5, filters=64)
     network = SimpleCNN(action_space=action_space, filters=512)
     print(network(x))

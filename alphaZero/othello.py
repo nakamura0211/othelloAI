@@ -3,13 +3,13 @@
     どちらかが合法手無くなると終了。その時点で石の多い方が勝利
     よって合法手の無い側が勝つこともある
 """
+
 import functools
 import copy
 import json
 import random
 import os
 
-from PIL import Image, ImageDraw
 import numpy as np
 
 
@@ -30,13 +30,12 @@ def idx_to_xy(i):
 
 
 def encode_state(state: list, current_player: int):
-    """ NN入力用の整形処理
-    """
+    """NN入力用の整形処理"""
     state = np.array(state).reshape(N_ROWS, N_COLS)
-    player = (state == current_player)
-    opponent = (state == -current_player)
+    player = state == current_player
+    opponent = state == -current_player
     x = np.stack([player, opponent], axis=2).astype(np.float32)
-
+    print(x.shape)
     return x
 
 
@@ -58,16 +57,16 @@ def get_directions(i):
     _, col = idx_to_xy(i)
 
     up = list(range(i, -1, -N_COLS))[1:]
-    down = list(range(i, N_ROWS*N_COLS, N_COLS))[1:]
+    down = list(range(i, N_ROWS * N_COLS, N_COLS))[1:]
 
-    left = list(reversed(range(i-col, i, 1)))
-    right = list(range(i+1, i + N_COLS - col))
+    left = list(reversed(range(i - col, i, 1)))
+    right = list(range(i + 1, i + N_COLS - col))
 
-    ul = list(range(i, -1, -N_COLS-1))[1:col+1]
-    ur = list(range(i, -1, -N_COLS+1))[1:N_COLS - col]
+    ul = list(range(i, -1, -N_COLS - 1))[1 : col + 1]
+    ur = list(range(i, -1, -N_COLS + 1))[1 : N_COLS - col]
 
-    ll = list(range(i, N_ROWS * N_COLS, N_COLS-1))[1:col+1]
-    lr = list(range(i, N_ROWS * N_COLS, N_COLS+1))[1:N_COLS - col]
+    ll = list(range(i, N_ROWS * N_COLS, N_COLS - 1))[1 : col + 1]
+    lr = list(range(i, N_ROWS * N_COLS, N_COLS + 1))[1 : N_COLS - col]
 
     return [up, down, left, right, ul, ur, ll, lr]
 
@@ -83,7 +82,7 @@ def is_valid_action(state: list, action: int, player: int):
     for direction in directions:
         stones = [state[i] for i in direction]
         if player in stones and -player in stones:
-            stones = stones[:stones.index(player)]
+            stones = stones[: stones.index(player)]
             if stones and all(i == -player for i in stones):
                 return True
 
@@ -95,8 +94,11 @@ def _get_valid_actions(state_str: list, player: int):
 
     state = json.loads(state_str)
 
-    valid_actions = [action for action in range(N_ROWS * N_COLS)
-                     if is_valid_action(state, action, player)]
+    valid_actions = [
+        action
+        for action in range(N_ROWS * N_COLS)
+        if is_valid_action(state, action, player)
+    ]
 
     if not valid_actions:
         #: 有効手無しの場合はパスを許可
@@ -172,7 +174,7 @@ def get_result(state: list):
         return 0, 0
 
 
-def greedy_action(state: list, player: int, epsilon=0.):
+def greedy_action(state: list, player: int, epsilon=0.0):
 
     valid_actions = get_valid_actions(state, player)
 
@@ -207,31 +209,37 @@ def save_img(state, savedir, fname, comment):
     height = 50 * N_ROWS
     width = 50 * N_COLS
 
-    img = Image.new('RGB', (width, height+30), (47, 79, 79))
+    img = Image.new("RGB", (width, height + 30), (47, 79, 79))
 
     draw = ImageDraw.Draw(img)
 
-    draw.rectangle((0, height, width, height+30), fill="black")
-    draw.text((10, height+15), comment)
+    draw.rectangle((0, height, width, height + 30), fill="black")
+    draw.text((10, height + 15), comment)
 
-    for i in range(N_COLS+1):
-        draw.line((0, i*50, width, i*50), fill=(10, 10, 10), width=1)
-    for i in range(N_ROWS+1):
-        draw.line((i*50, 0, i*50, height), fill=(10, 10, 10), width=1)
+    for i in range(N_COLS + 1):
+        draw.line((0, i * 50, width, i * 50), fill=(10, 10, 10), width=1)
+    for i in range(N_ROWS + 1):
+        draw.line((i * 50, 0, i * 50, height), fill=(10, 10, 10), width=1)
 
     for i in range(N_ROWS * N_COLS):
         v = state[i]
         row, col = i // N_ROWS, i % N_COLS
         cy, cx = (50 * row + 5, 50 * col + 5)
         if v == 1:
-            draw.ellipse((cx, cy, cx+40, cy+40), fill="black")
+            draw.ellipse((cx, cy, cx + 40, cy + 40), fill="black")
         elif v == -1:
-            draw.ellipse((cx, cy, cx+40, cy+40), fill="white")
+            draw.ellipse((cx, cy, cx + 40, cy + 40), fill="white")
 
     save_path = os.path.join(savedir, fname)
     img.save(save_path, quality=95)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     state = get_initial_state()
-    save_img(state, "img", "test_1.png", "ALphazero 1: 22 vs 12")
+    print(state)
+    n = encode_state(state, 2)
+    print(n[0])
+    print(n[1])
+    print(n[3])
+    print(n[4])
+    # save_img(state, "img", "test_1.png", "ALphazero 1: 22 vs 12")

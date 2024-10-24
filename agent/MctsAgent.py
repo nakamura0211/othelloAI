@@ -105,11 +105,13 @@ class McAgent(Agent):
             act = puts[pon]
 
             next_state = OthelloEnv.put(state, act)
-            winner = OthelloEnv.play(
-                McAgent.random_agent,
-                McAgent.random_agent,
-                init_state=next_state,
-                do_print=False,
+            winner = OthelloEnv.winner(
+                OthelloEnv.play(
+                    McAgent.random_agent,
+                    McAgent.random_agent,
+                    init_state=next_state,
+                    do_print=False,
+                )
             )
             if winner == state.color:
                 win_number[pon] += 1
@@ -182,11 +184,13 @@ class MctsNode:
 
     # ランダムプレイする
     def playout(self):
-        winner = OthelloEnv.play(
-            MctsNode.random_agent,
-            MctsNode.random_agent,
-            init_state=self.state,
-            do_print=False,
+        winner = OthelloEnv.winner(
+            OthelloEnv.play(
+                MctsNode.random_agent,
+                MctsNode.random_agent,
+                init_state=self.state,
+                do_print=False,
+            )
         ).reverse()
 
         self.chosen += 1

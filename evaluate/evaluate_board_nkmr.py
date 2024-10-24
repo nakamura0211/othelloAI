@@ -7,8 +7,8 @@ def evaluate_board_nkmr(state: State) -> int:
     color = state.color
     result = 0
     n = 0  # 置かれた石の数
-    for y in range(8):
-        for x in range(8):
+    for y in range(SIZE):
+        for x in range(SIZE):
             if board[y][x] != 0:
                 n += 1
     if OthelloEnv.is_done(state):
@@ -25,25 +25,25 @@ def evaluate_board_nkmr(state: State) -> int:
 
     for c in range(1, 3):
         e = 0
-        if board[0].count(c) == 8:
+        if board[0].count(c) == SIZE:
             e += 100
-        if board[7].count(c) == 8:
+        if board[SIZE - 1].count(c) == SIZE:
             e += 100
         c0 = 0
         c7 = 0
-        for y in range(8):
+        for y in range(SIZE):
             if board[y][0] == c:
                 c0 += 1
-            if board[y][7] == c:
+            if board[y][SIZE - 1] == c:
                 c7 += 1
-        if c0 == 8:
+        if c0 == SIZE:
             e += 100
-        if c7 == 8:
+        if c7 == SIZE:
             e += 100
         result += e if c == 1 else -e
 
-    for y in range(8):
-        for x in range(8):
+    for y in range(SIZE):
+        for x in range(SIZE):
             if board[y][x] == 0:
                 continue
             e = 1
@@ -54,19 +54,19 @@ def evaluate_board_nkmr(state: State) -> int:
             # 終盤は数優先
             if n > 40:
                 e += 15
-            if n >= 60:
+            if n >= SIZE - 20:
                 e += 45
 
             if (
                 (x, y) == (0, 0)
-                or (x, y) == (0, 7)
-                or (x, y) == (7, 0)
-                or (x, y) == (7, 7)
+                or (x, y) == (0, SIZE - 1)
+                or (x, y) == (SIZE - 1, 0)
+                or (x, y) == (SIZE - 1, SIZE - 1)
             ):
                 e += 200
 
             # 隅は加点
-            if x == 0 or x == 7 or y == 0 or y == 7:
+            if x == 0 or x == SIZE - 1 or y == 0 or y == SIZE - 1:
                 e += 15
             # とってない角の隣はペナルティ
             if board[y][x] == 1:
@@ -74,16 +74,22 @@ def evaluate_board_nkmr(state: State) -> int:
                     (x, y) == (1, 1) or (x, y) == (0, 1) or (x, y) == (1, 0)
                 ):
                     e -= 60
-                if board[0][7] != 1 and (
-                    (x, y) == (1, 6) or (x, y) == (1, 7) or (x, y) == (0, 6)
+                if board[0][SIZE - 1] != 1 and (
+                    (x, y) == (1, SIZE - 1)
+                    or (x, y) == (1, SIZE - 1)
+                    or (x, y) == (0, SIZE - 1)
                 ):
                     e -= 60
-                if board[7][0] != 1 and (
-                    (x, y) == (6, 1) or (x, y) == (6, 0) or (x, y) == (7, 1)
+                if board[SIZE - 1][0] != 1 and (
+                    (x, y) == (SIZE - 1, 1)
+                    or (x, y) == (SIZE - 1, 0)
+                    or (x, y) == (SIZE - 1, 1)
                 ):
                     e -= 60
-                if board[7][7] != 1 and (
-                    (x, y) == (6, 7) or (x, y) == (6, 6) or (x, y) == (7, 6)
+                if board[SIZE - 1][SIZE - 1] != 1 and (
+                    (x, y) == (SIZE - 1, SIZE - 1)
+                    or (x, y) == (SIZE - 1, SIZE - 1)
+                    or (x, y) == (SIZE - 1, SIZE - 1)
                 ):
                     e -= 60
 
@@ -92,18 +98,24 @@ def evaluate_board_nkmr(state: State) -> int:
                     (x, y) == (1, 1) or (x, y) == (0, 1) or (x, y) == (1, 0)
                 ):
                     e -= 60
-                if board[0][7] != 2 and (
-                    (x, y) == (1, 6) or (x, y) == (1, 7) or (x, y) == (0, 6)
+                if board[0][SIZE - 1] != 2 and (
+                    (x, y) == (1, SIZE - 1)
+                    or (x, y) == (1, SIZE - 1)
+                    or (x, y) == (0, SIZE - 1)
                 ):
                     e -= 60
-                if board[7][0] != 2 and (
-                    (x, y) == (6, 1) or (x, y) == (6, 0) or (x, y) == (7, 1)
+                if board[SIZE - 1][0] != 2 and (
+                    (x, y) == (SIZE - 1, 1)
+                    or (x, y) == (SIZE - 1, 0)
+                    or (x, y) == (SIZE - 1, 1)
                 ):
                     e -= 60
-                if board[7][7] != 2 and (
-                    (x, y) == (6, 7) or (x, y) == (6, 6) or (x, y) == (7, 6)
+                if board[SIZE - 1][SIZE - 1] != 2 and (
+                    (x, y) == (SIZE - 1, SIZE - 1)
+                    or (x, y) == (SIZE - 1, SIZE - 1)
+                    or (x, y) == (SIZE - 1, SIZE - 2)
                 ):
-                    e -= 60
+                    e -= SIZE - 20
 
             if x == 0 or x == 2 or x == 5 or x == 7:
                 e += 1
