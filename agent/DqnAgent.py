@@ -28,12 +28,51 @@ class DqnAgent(Agent):
         self.epsilon = epsilon
         self.epsilon_min = 0.01
         self.epsilon_decay = 0.98
-        self.learning_rate = 0.0005
-        self.model = DqnNetwork()
-        if weights is not None:
+        self.learning_rate = 0.001
+        self.model = self._build_model()
+        if weights is not None and len(weights) != 0:
             self.model.set_weights(weights)
-        self.model.build((SIZE, SIZE, 3))
-        self.model.compile(loss="mse", optimizer=Adam(learning_rate=self.learning_rate))
+
+    def _build_model(self):
+        model = Sequential()
+        model.add(Input(shape=(SIZE, SIZE, 3)))
+        model.add(
+            Conv2D(
+                512,
+                (3, 3),
+                activation="relu",
+                padding="same",
+                use_bias=False,
+                kernel_initializer=HeNormal(),
+            )
+        )
+        model.add(BatchNormalization())
+        model.add(
+            Conv2D(
+                512,
+                (3, 3),
+                activation="relu",
+                padding="same",
+                use_bias=False,
+                kernel_initializer=HeNormal(),
+            )
+        )
+        model.add(BatchNormalization())
+        # model.add(MaxPooling2D((2, 2)))
+        model.add(Flatten())
+        # model.add(Dense(256,activation='relu'))
+        model.add(
+            Dense(
+                SIZE * SIZE * 2,
+                activation="relu",
+            )  # kernel_initializer=HeNormal())
+        )
+        model.add(Dense(SIZE * SIZE))
+        model.add(BatchNormalization())
+        model.add(Activation("tanh"))
+        # print(model.summary())
+        model.compile(loss="mse", optimizer=Adam(learning_rate=self.learning_rate))
+        return model
 
     def remember(
         self, state: State, action: Action, reward: int, next_state: State, done: bool
@@ -74,7 +113,7 @@ class DqnAgent(Agent):
             y.append(target_y.reshape((1, SIZE * SIZE)))
         if self.epsilon > self.epsilon_min:
             self.epsilon *= self.epsilon_decay
-        self.model.fit(np.array(x), np.array(y), epochs=1, verbose=1)
+        self.model.fit(np.array(x), np.array(y), epochs=1, verbose=0)
 
     def act(self, state: State) -> Action:
         if np.random.rand() <= self.epsilon:
@@ -138,6 +177,7 @@ class DqnNetwork(keras.Model):
         self.tanh = Activation("tanh")
 
     def call(self, x):
+        x = Input((SIZE, SIZE, 3))(x)
         x = self.bn1(self.conv1(x))
         x = self.bn2(self.conv2(x))
         x = self.dense1(self.flatten(x))

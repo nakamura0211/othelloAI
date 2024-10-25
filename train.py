@@ -4,25 +4,22 @@ from agent.RandomAgent import RandomAgent
 from tqdm import tqdm
 import ray
 from collections import deque
-import os
 
 
 def train():
-    if not os.path.exists("model"):
-        os.makedirs("model")
+    ray.init(num_cpus=2)
     agent = DqnAgent()
-    random_agent = RandomAgent()
     n_episodes = 10000
     each_episodes = 50
     batch_size = 512
-    n_parallel_selfplay = 4
+    n_parallel_selfplay = 16
     n = 0
     current_weights = agent.model.get_weights()
     work_in_progresses = [
         self_play.remote(agent.epsilon, current_weights, each_episodes)
         for _ in range(n_parallel_selfplay)
     ]
-    while n < n_episodes:
+    for n in tqdm(range(n_episodes // 50)):
         print(n)
         for _ in tqdm(range(50)):
             finished, work_in_progresses = ray.wait(work_in_progresses, num_returns=1)
@@ -35,8 +32,9 @@ def train():
             n += 1
             if len(agent.memory) > batch_size:
                 agent.train(batch_size)
+                current_weights = agent.model.get_weights()
+
         agent.model.save(f"model/dqn{n}.keras")
-        current_weights = agent.model.get_weights()
 
 
 @ray.remote
