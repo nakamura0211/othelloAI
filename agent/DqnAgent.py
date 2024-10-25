@@ -14,6 +14,7 @@ from keras.src.layers import (
 )
 from keras.src.initializers import HeNormal
 from keras.src.optimizers import Adam
+from tqdm import tqdm
 
 from domain import OthelloEnv
 from domain.models import *
@@ -43,7 +44,9 @@ class DqnAgent(Agent):
         minibatch = random.sample(self.memory, batch_size)
         x = []
         y = []
-        for state, action, reward, next_state, done in minibatch:
+        for state, action, reward, next_state, done in tqdm(
+            minibatch, desc="preparing training data sets"
+        ):
             if not done:
                 nx_valid = {a.index for a in OthelloEnv.valid_actions(next_state)}
                 nx_p = self.model.predict(
