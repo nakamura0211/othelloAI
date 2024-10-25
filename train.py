@@ -3,11 +3,10 @@ from agent.DqnAgent import DqnAgent
 from agent.RandomAgent import RandomAgent
 from tqdm import tqdm
 from typing import Literal
+import ray
 
-a = Literal["hello"]
 
 agent = DqnAgent()
-agent.load("model/dqn_relu500.keras")
 random_agent = RandomAgent()
 n_episodes = 10000
 batch_size = 48
@@ -29,7 +28,7 @@ for e in tqdm(range(1, n_episodes + 1)):
         scores.append(b - w)
         print(scores)
         print(agent.epsilon)
-        agent.model.save(f"model/dqn_relu{e}.keras")
+        agent.model.save(f"model/dqn{e}.keras")
 
     if len(agent.memory) > batch_size:
         agent.train(batch_size)

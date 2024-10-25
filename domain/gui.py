@@ -38,10 +38,8 @@ def play(
 
         if get_policy is not None:
             if state.color != policy_cache[0] or policy_cache[1] is None:
-                policy: np.ndarray = get_policy(state)[0]
-                policy = policy - np.average(policy)
-                policy = policy / np.max(np.abs(policy)) * 10
-                print(policy)
+                policy: np.ndarray = get_policy(state)
+                print(policy.reshape(SIZE, SIZE).T)
                 policy_cache = (state.color, policy)
             else:
                 policy = policy_cache[1]
@@ -49,10 +47,12 @@ def play(
             for y in range(size):
                 for x in range(size):
                     p = policy[Action(x, y).index]
-                    if p > 0:
-                        c = (0, 180, min(p * 255, 255))
+                    if p == 0:
+                        c = (0, 180, 0)
+                    elif p > 0:
+                        c = (0, min(180, 80 / p), min(p * 255, 255))
                     else:
-                        c = (min(-p * 255, 255), 180, 0)
+                        c = (min(-p * 255, 255), min(-80 / p, 180), 0)
                     # print(c)
                     pygame.draw.rect(screen, c, Rect(44 + 64 * x, 44 + 64 * y, 64, 64))
         length = 64 * size + 44
