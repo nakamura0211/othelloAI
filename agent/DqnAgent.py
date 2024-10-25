@@ -44,24 +44,25 @@ class DqnAgent(Agent):
         minibatch = random.sample(self.memory, batch_size)
         x = []
         y = []
-        for state, action, reward, next_state, done in tqdm(
-            minibatch, desc="preparing training data sets"
-        ):
+        x_next = []
+        x_cur = []
+        for state, action, reward, next_state, done in minibatch:
+            x_next.append(next_state.to_image())
+            x_cur.append(state.to_image())
+        y_next = self.model.predict(np.array(x_next), verbose=0)
+        target_ys = self.model.predict(np.array(x_cur), verbose=0)
+
+        for i, (state, action, reward, next_state, done) in enumerate(minibatch):
             if not done:
                 nx_valid = {a.index for a in OthelloEnv.valid_actions(next_state)}
-                nx_p = self.model.predict(
-                    next_state.to_image().reshape((1, SIZE, SIZE, 3)),
-                    verbose=0,
-                )[0]
+                nx_p = y_next[i]
                 target = self.gamma * np.amin(
                     [v if i in nx_valid else 2 for i, v in enumerate(nx_p)]
                 )
             else:
                 target = reward
 
-            target_y = self.model.predict(
-                state.to_image().reshape((1, SIZE, SIZE, 3)), verbose=0
-            )[0]
+            target_y = target_ys[i]
             target_y[action.index] = target
             invalid_mask = 0
             valid_actions = {a.index for a in OthelloEnv.valid_actions(state)}

@@ -13,8 +13,6 @@ def train():
     each_episodes = 50
     batch_size = 512
     n_parallel_selfplay = 4
-    scores = []
-    replay_buffer = deque(maxlen=20000)
     n = 0
     current_weights = agent.model.get_weights()
     work_in_progresses = [
