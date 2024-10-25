@@ -4,9 +4,12 @@ from agent.RandomAgent import RandomAgent
 from tqdm import tqdm
 import ray
 from collections import deque
+import os
 
 
 def train():
+    if not os.path.exists("model"):
+        os.makedirs("model")
     agent = DqnAgent()
     random_agent = RandomAgent()
     n_episodes = 10000
