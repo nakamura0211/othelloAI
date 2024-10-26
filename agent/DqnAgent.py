@@ -13,6 +13,7 @@ from keras.src.layers import (
     Activation,
     Dropout,
 )
+import tensorflow as tf
 from keras.src.losses import categorical_crossentropy
 from keras.src.initializers import HeNormal
 from keras.src.optimizers import Adam
@@ -103,7 +104,7 @@ class DqnAgent(Agent):
 
     @staticmethod
     def tanh_crossentropy(y_true, y_pred):
-        return categorical_crossentropy(y_true, abs(y_pred))
+        return categorical_crossentropy((y_true + 1) / 2, (y_pred + 1) / 2)
 
     def remember(
         self, state: State, action: Action, reward: int, next_state: State, done: bool
