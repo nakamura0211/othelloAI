@@ -36,43 +36,63 @@ class DqnAgent(Agent):
 
     def _build_model(self):
         model = Sequential()
+        relu = Activation("relu")
         model.add(Input(shape=(SIZE, SIZE, 3)))
         model.add(
             Conv2D(
                 512,
-                (3, 3),
-                activation="relu",
+                3,
                 padding="same",
                 use_bias=False,
-                kernel_initializer=HeNormal(),
             )
         )
         model.add(BatchNormalization())
+        model.add(relu)
         model.add(
             Conv2D(
                 512,
-                (3, 3),
-                activation="relu",
+                3,
                 padding="same",
                 use_bias=False,
-                kernel_initializer=HeNormal(),
             )
         )
         model.add(BatchNormalization())
-        # model.add(MaxPooling2D((2, 2)))
-        model.add(Flatten())
+        model.add(relu)
         model.add(
-            Dense(SIZE * SIZE * 4, activation="relu", kernel_initializer=HeNormal())
+            Conv2D(
+                512,
+                3,
+                padding="valid",
+                use_bias=False,
+            )
         )
-        model.add(Dropout(0.2))
-        model.add(
-            Dense(SIZE * SIZE * 2, activation="relu", kernel_initializer=HeNormal())
-        )
-        model.add(Dropout(0.2))
-        model.add(Dense(SIZE * SIZE))
         model.add(BatchNormalization())
-        model.add(Activation("tanh"))
-        # print(model.summary())
+        model.add(relu)
+        model.add(
+            Conv2D(
+                512,
+                3,
+                padding="valid",
+                use_bias=False,
+            )
+        )
+        model.add(BatchNormalization())
+        model.add(relu)
+        model.add(Flatten())
+
+        model.add(Dense(1024, use_bias=False))
+        model.add(BatchNormalization())
+        model.add(relu)
+        model.add(Dropout(0.3))
+
+        model.add(Dense(512, use_bias=False))
+        model.add(BatchNormalization())
+        model.add(relu)
+        model.add(Dropout(0.3))
+
+        model.add(Dense(SIZE * SIZE, activation="tanh"))
+        # model.add(BatchNormalization())
+        # model.add(Activation("tanh"))
         model.compile(loss="mse", optimizer=Adam(learning_rate=self.learning_rate))
         return model
 
