@@ -11,8 +11,8 @@ def train():
     ray.init(num_cpus=4)
     agent = DqnAgent()
     n_episodes = 10000
-    each_episodes = 50
-    batch_size = 512
+    each_episodes = 20
+    batch_size = 1024
     n_parallel_selfplay = 4
     n = 0
     current_weights = agent.model.get_weights()
@@ -23,11 +23,11 @@ def train():
     for i in tqdm(range(1, n_episodes // 50 + 1)):
         for _ in tqdm(range(50)):
             finished, work_in_progresses = ray.wait(work_in_progresses, num_returns=1)
-            agent.memory.extend(ray.get(finished[0]))
+            agent.memory.extend(
+                ray.get(finished[0])
+            )  # 120*each_episodes ぐらい追加される
             work_in_progresses.extend(
-                [
-                    self_play.remote(agent.epsilon, current_weights, each_episodes)
-                ]  # 1500個ぐらい
+                [self_play.remote(agent.epsilon, current_weights, each_episodes)]
             )
             if len(agent.memory) > batch_size:
                 agent.train(batch_size)
@@ -46,6 +46,8 @@ def self_play(epsilon: int, weights: list, play_num):
             action = agent.act(state)
             next_state, reward, done = OthelloEnv.step(state, action)
             memory.append((state, action, reward, next_state, done))
+            for s, a, s2 in zip(state.turn(), action.turn(), next_state.turn()):
+                memory.append((s, a, reward, s2, done))
             state = next_state
             if done:
                 break

@@ -13,6 +13,7 @@ from keras.src.layers import (
     Activation,
     Dropout,
 )
+from keras.src.losses import categorical_crossentropy
 from keras.src.initializers import HeNormal
 from keras.src.optimizers import Adam
 from tqdm import tqdm
@@ -24,7 +25,7 @@ import ray
 
 class DqnAgent(Agent):
     def __init__(self, epsilon: float = 1.0, weights: list | None = None):
-        self.memory = deque[tuple[State, Action, int, State, bool]](maxlen=2000)
+        self.memory = deque[tuple[State, Action, int, State, bool]](maxlen=20000)
         self.gamma = 0.998
         self.epsilon = epsilon
         self.epsilon_min = 0.01
@@ -94,11 +95,15 @@ class DqnAgent(Agent):
         model.add(BatchNormalization())
         model.add(Activation("tanh"))
         model.compile(
-            loss="mse",
+            loss=self.tanh_crossentropy,
             optimizer=Adam(learning_rate=self.learning_rate),
             metrics=["accuracy"],
         )
         return model
+
+    @staticmethod
+    def tanh_crossentropy(y_true, y_pred):
+        return categorical_crossentropy(y_true, abs(y_pred))
 
     def remember(
         self, state: State, action: Action, reward: int, next_state: State, done: bool
@@ -137,7 +142,6 @@ class DqnAgent(Agent):
 
             x.append(state.to_image())
             y.append(target_y.reshape((SIZE * SIZE)))
-        print(y[0])
         if self.epsilon > self.epsilon_min:
             self.epsilon *= self.epsilon_decay
         self.model.fit(np.array(x), np.array(y), epochs=1, verbose=1)

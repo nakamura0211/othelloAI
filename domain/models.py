@@ -52,6 +52,14 @@ class State:
             self.color if color is None else color,
         )
 
+    # 90,180,270度回転したものを返す
+    def turn(self):
+        return (
+            State([l[::-1] for l in self.board], self.color),
+            State([l[::-1] for l in self.board[::-1]], self.color),
+            State([l[::1] for l in self.board[::-1]], self.color),
+        )
+
 
 class Action:
     def __init__(self, x: int, y: int | None = None):
@@ -64,6 +72,16 @@ class Action:
             self.x = x
             self.y = y
         self.cord = (self.x, self.y)
+
+    def turn(self):
+        return (
+            Action(SIZE - self.x - 1, self.y),
+            Action(SIZE - self.x - 1, SIZE - self.y - 1),
+            Action(self.x, SIZE - self.y - 1),
+        )
+
+    def __str__(self):
+        return f"{self.x} {self.y}"
 
 
 EvaluateState = Callable[[State], float]
