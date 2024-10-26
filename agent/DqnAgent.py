@@ -11,6 +11,7 @@ from keras.src.layers import (
     Conv2D,
     MaxPooling2D,
     Activation,
+    Dropout,
 )
 from keras.src.initializers import HeNormal
 from keras.src.optimizers import Adam
@@ -60,13 +61,14 @@ class DqnAgent(Agent):
         model.add(BatchNormalization())
         # model.add(MaxPooling2D((2, 2)))
         model.add(Flatten())
-        # model.add(Dense(256,activation='relu'))
         model.add(
-            Dense(
-                SIZE * SIZE * 2,
-                activation="relu",
-            )  # kernel_initializer=HeNormal())
+            Dense(SIZE * SIZE * 4, activation="relu", kernel_initializer=HeNormal())
         )
+        model.add(Dropout(0.2))
+        model.add(
+            Dense(SIZE * SIZE * 2, activation="relu", kernel_initializer=HeNormal())
+        )
+        model.add(Dropout(0.2))
         model.add(Dense(SIZE * SIZE))
         model.add(BatchNormalization())
         model.add(Activation("tanh"))
@@ -136,9 +138,9 @@ class DqnAgent(Agent):
             )
 
     def policy(self, state: State) -> list[float]:
-        return self.model.predict(state.to_image().reshape((1, SIZE, SIZE, 3)))[0] * (
-            1 if state.color == Color.BLACK else -1
-        )
+        return self.model.predict(state.to_image().reshape((1, SIZE, SIZE, 3)))[
+            0
+        ]  # * (1 if state.color == Color.BLACK else -1)
 
     def load(self, name):
         self.model.load_weights(name)
