@@ -90,10 +90,14 @@ class DqnAgent(Agent):
         model.add(relu)
         model.add(Dropout(0.3))
 
-        model.add(Dense(SIZE * SIZE, activation="tanh"))
-        # model.add(BatchNormalization())
-        # model.add(Activation("tanh"))
-        model.compile(loss="mse", optimizer=Adam(learning_rate=self.learning_rate))
+        model.add(Dense(SIZE * SIZE))
+        model.add(BatchNormalization())
+        model.add(Activation("tanh"))
+        model.compile(
+            loss="mse",
+            optimizer=Adam(learning_rate=self.learning_rate),
+            metrics=["accuracy"],
+        )
         return model
 
     def remember(
@@ -127,15 +131,16 @@ class DqnAgent(Agent):
             target_y[action.index] = target
             invalid_mask = 0
             valid_actions = {a.index for a in OthelloEnv.valid_actions(state)}
-            for i in range(SIZE, SIZE):
+            for i in range(SIZE * SIZE):
                 if i not in valid_actions:
                     target_y[i] = invalid_mask
 
             x.append(state.to_image())
-            y.append(target_y.reshape((1, SIZE * SIZE)))
+            y.append(target_y.reshape((SIZE * SIZE)))
+        print(y[0])
         if self.epsilon > self.epsilon_min:
             self.epsilon *= self.epsilon_decay
-        self.model.fit(np.array(x), np.array(y), epochs=1, verbose=0)
+        self.model.fit(np.array(x), np.array(y), epochs=1, verbose=1)
 
     def act(self, state: State) -> Action:
         if np.random.rand() <= self.epsilon:
