@@ -31,7 +31,7 @@ class DqnAgent(Agent):
         self.epsilon = epsilon
         self.epsilon_min = 0.01
         self.epsilon_decay = 0.98
-        self.learning_rate = 0.001
+        self.learning_rate = 0.0001
         self.model = self._build_model()
         if weights is not None and len(weights) != 0:
             self.model.set_weights(weights)
