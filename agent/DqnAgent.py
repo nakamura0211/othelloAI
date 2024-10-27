@@ -97,7 +97,7 @@ class DqnAgent(Agent):
         model.add(Activation("tanh"))
         model.compile(
             loss=self.tanh_crossentropy,
-            optimizer=Adam(learning_rate=self.learning_rate),
+            optimizer=Adam(learning_rate=self.learning_rate, clipnorm=1),
             metrics=["accuracy"],
         )
         return model

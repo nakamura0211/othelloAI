@@ -23,6 +23,7 @@ def play(
     end_flag = False
     history = []
     policy_cache = (state, None)
+    done = False
     # ゲームループ
     while True:
         player = black if state.color == Color.BLACK else white
@@ -75,6 +76,9 @@ def play(
 
         # 描画
         pygame.display.update()
+        if done:
+            winner = OthelloEnv.winner(state)
+            break
         if player is not None:
             action = player.act(state)
             next_state, reward, done = OthelloEnv.step(state, action)
@@ -122,8 +126,51 @@ def play(
         if end_flag:
             break
         pygame.display.update()
+    _, b, w = OthelloEnv.count(state)
     print(winner)
+    print(f"black: {b} white: {w}")
+
     while True:
+        screen.fill((0, 155, 0))
+        # 一手前の手をハイライト
+        if len(history) > 0:
+            x, y = history[-1]
+            pygame.draw.rect(
+                screen,
+                (180, 180, 0),
+                Rect(44 + 64 * x, 44 + 64 * y, 64, 64),
+            )
+        # 枠線
+        length = 64 * size + 44
+        for i in range(size + 1):
+            pygame.draw.line(
+                screen, (0, 0, 0), (i * 64 + 44, 44), (i * 64 + 44, length), 1
+            )
+        for i in range(size + 1):
+            pygame.draw.line(
+                screen, (0, 0, 0), (44, i * 64 + 44), (length, i * 64 + 44), 1
+            )
+            # オセロの石
+        for y in range(size):
+            for x in range(size):
+                if state.board[y][x] == 0:
+                    continue
+                c = (0, 0, 0) if state.board[y][x] == 1 else (255, 255, 255)
+                pygame.draw.circle(screen, c, (76 + x * 64, 76 + y * 64), 25)
+        for e in pygame.event.get():
+            if e.type == QUIT:
+                pygame.quit()
+                sys.exit()
+            # マウスが動いたとき
+            elif e.type == MOUSEMOTION:
+                # 触っているセルを計算
+                x, y = map(lambda x: math.floor((x - 44) / 64), e.pos)
+                # 置けるセルなら表示を変える
+                if (x, y) in pos_puts:
+                    pygame.mouse.set_cursor(pygame.cursors.diamond)
+                else:
+                    pygame.mouse.set_cursor(pygame.cursors.arrow)
+        # 描画
         pygame.display.update()
 
     return winner

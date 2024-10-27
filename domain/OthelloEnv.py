@@ -39,13 +39,6 @@ valid actions were {[i.cord for i in valid_actions(state)]}
         _, black, white = count(state)
         reward = black - white if state.color == Color.BLACK else white - black
         return next_state, reward / SIZE / SIZE, True
-        if black == white:
-            return next_state, 0, True
-        if (state.color == Color.BLACK and black > white) or (
-            state.color == Color.WHITE and white > black
-        ):
-            return next_state, 1, True
-        return next_state, -1, True
     return next_state, 0, False
 
 
