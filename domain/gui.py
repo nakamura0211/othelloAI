@@ -6,6 +6,7 @@ from pygame.locals import *
 import math
 from domain.models import *
 from domain import OthelloEnv
+from keras.src.layers import BatchNormalization
 
 
 def play(

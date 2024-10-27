@@ -127,8 +127,8 @@ class DqnAgent(Agent):
             if not done:
                 nx_valid = {a.index for a in OthelloEnv.valid_actions(next_state)}
                 nx_p = y_next[i]
-                target = self.gamma * np.amin(
-                    [v if i in nx_valid else 2 for i, v in enumerate(nx_p)]
+                target = -self.gamma * np.amax(
+                    [v if i in nx_valid else -2 for i, v in enumerate(nx_p)]
                 )
             else:
                 target = reward
@@ -154,18 +154,9 @@ class DqnAgent(Agent):
         act_values = self.model.predict(
             state.to_image().reshape(1, SIZE, SIZE, 3), verbose=0
         )
-        if state.color == Color.BLACK:
-            return Action(
-                np.argmax(
-                    [v if i in valid else -np.inf for i, v in enumerate(act_values[0])]
-                )
-            )
-        else:
-            return Action(
-                np.argmin(
-                    [v if i in valid else np.inf for i, v in enumerate(act_values[0])]
-                )
-            )
+        return Action(
+            np.argmax([v if i in valid else -2 for i, v in enumerate(act_values[0])])
+        )
 
     def policy(self, state: State) -> list[float]:
         return self.model.predict(state.to_image().reshape((1, SIZE, SIZE, 3)))[
