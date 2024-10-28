@@ -21,7 +21,6 @@ from tqdm import tqdm
 
 from domain import OthelloEnv
 from domain.models import *
-import ray
 
 
 class DqnAgent(Agent):

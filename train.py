@@ -8,13 +8,13 @@ from collections import deque
 
 
 def train():
-    ray.init(num_cpus=4)
+    num_cpus = 8
+    ray.init(num_cpus=num_cpus, num_gpus=1)
     agent = DqnAgent()
     n_episodes = 10000
-    each_episodes = 20
+    each_episodes = 50
     batch_size = 1024
-    n_parallel_selfplay = 4
-    n = 0
+    n_parallel_selfplay = num_cpus - 1
     current_weights = agent.model.get_weights()
     work_in_progresses = [
         self_play.remote(agent.epsilon, current_weights, each_episodes)
@@ -36,7 +36,7 @@ def train():
         agent.model.save(f"model/dqn{i*50}.keras")
 
 
-@ray.remote
+@ray.remote(num_cpus=1)
 def self_play(epsilon: int, weights: list, play_num):
     agent = DqnAgent(epsilon=epsilon, weights=weights)
     memory = []
