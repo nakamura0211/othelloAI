@@ -42,6 +42,7 @@ def play(
             if state.color != policy_cache[0] or policy_cache[1] is None:
                 policy: np.ndarray = get_policy(state)
                 print(policy.reshape(SIZE, SIZE).T)
+                print(policy.mean())
                 policy_cache = (state.color, policy)
             else:
                 policy = policy_cache[1]

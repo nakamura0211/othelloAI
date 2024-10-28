@@ -14,9 +14,9 @@ from keras.src.layers import (
     Dropout,
 )
 import tensorflow as tf
-from keras.src.losses import categorical_crossentropy
+from keras.src.losses import categorical_crossentropy, mean_squared_error
 from keras.src.initializers import HeNormal
-from keras.src.optimizers import Adam
+from keras.src.optimizers import Adam, SGD
 from tqdm import tqdm
 
 from domain import OthelloEnv
@@ -36,10 +36,55 @@ class DqnAgent(Agent):
         if weights is not None and len(weights) != 0:
             self.model.set_weights(weights)
 
+    def _build_small_model(self):
+        model = Sequential()
+        relu = Activation("relu")
+        model.add(Input(shape=(SIZE, SIZE, 2)))
+        model.add(
+            Conv2D(
+                512,
+                3,
+                padding="same",
+                use_bias=False,
+            )
+        )
+        model.add(BatchNormalization())
+        model.add(relu)
+        model.add(
+            Conv2D(
+                512,
+                3,
+                padding="valid",
+                use_bias=False,
+            )
+        )
+        model.add(BatchNormalization())
+        model.add(relu)
+
+        model.add(Flatten())
+
+        model.add(Dense(512, use_bias=False))
+        model.add(BatchNormalization())
+        model.add(relu)
+        model.add(Dropout(0.3))
+
+        model.add(Dense(SIZE * SIZE))
+        model.add(BatchNormalization())
+        model.add(Activation("tanh"))
+        model.compile(
+            loss=self.tanh_crossentropy,
+            optimizer=Adam(learning_rate=self.learning_rate, clipnorm=1),
+            # optimizer=SGD(learning_rate=self.learning_rate, clipnorm=1),
+            metrics=[
+                "cosine_similarity",
+            ],  # "sparse_categorical_accuracy",
+        )
+        return model
+
     def _build_model(self):
         model = Sequential()
         relu = Activation("relu")
-        model.add(Input(shape=(SIZE, SIZE, 3)))
+        model.add(Input(shape=(SIZE, SIZE, 2)))
         model.add(
             Conv2D(
                 512,
@@ -98,13 +143,19 @@ class DqnAgent(Agent):
         model.compile(
             loss=self.tanh_crossentropy,
             optimizer=Adam(learning_rate=self.learning_rate, clipnorm=1),
-            metrics=["accuracy"],
+            metrics=[
+                "accuracy",
+                "cosine_similarity",
+            ],
         )
         return model
 
     @staticmethod
     def tanh_crossentropy(y_true, y_pred):
         return categorical_crossentropy((y_true + 1) / 2, (y_pred + 1) / 2)
+
+    def tanh_mse(y_true, y_pred):
+        return mean_squared_error(y_true * 10, y_pred * 10)
 
     def remember(
         self, state: State, action: Action, reward: int, next_state: State, done: bool
@@ -152,14 +203,14 @@ class DqnAgent(Agent):
             return random.choice(OthelloEnv.valid_actions(state))
         valid = [action.index for action in OthelloEnv.valid_actions(state)]
         act_values = self.model.predict(
-            state.to_image().reshape(1, SIZE, SIZE, 3), verbose=0
+            state.to_image().reshape(1, SIZE, SIZE, 2), verbose=0
         )
         return Action(
             np.argmax([v if i in valid else -2 for i, v in enumerate(act_values[0])])
         )
 
     def policy(self, state: State) -> list[float]:
-        return self.model.predict(state.to_image().reshape((1, SIZE, SIZE, 3)))[
+        return self.model.predict(state.to_image().reshape((1, SIZE, SIZE, 2)))[
             0
         ]  # * (1 if state.color == Color.BLACK else -1)
 

@@ -31,7 +31,11 @@ class State:
     color: Color
 
     @staticmethod
-    def from_image(image: BoardImage):
+    def from_image(image: BoardImage, color: Color):
+        if color == Color.BLACK:
+            return State((image[:, :, 0] + image[:, :, 1] * 2).tolist(), color)
+        else:
+            return State((image[:, :, 0] * 2 + image[:, :, 1]).tolist(), color)
         board = [[0] * SIZE for _ in range(SIZE)]
         for x in range(SIZE):
             for y in range(SIZE):
@@ -42,6 +46,11 @@ class State:
         return State(board, image[0, 0, 2])
 
     def to_image(self) -> BoardImage:
+        b = np.array(self.board)
+        me = b == self.color
+        opp = b == self.color.reverse()
+        return np.stack([me, opp], axis=2).astype(np.float32)
+
         image = np.zeros((SIZE, SIZE, 3))
         for x in range(SIZE):
             for y in range(SIZE):
