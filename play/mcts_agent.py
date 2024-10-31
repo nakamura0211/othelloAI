@@ -6,9 +6,9 @@ from play.mcts import MctsNode
 import numpy as np
 def mcts_agent(othello:Othello,color:int):
     root_node=MctsNode([],othello)
-    for i in range(1000):
+    for i in range(100):
         root_node.search_node_must_be_playouted().playout()
-    root_node.print_tree(0)
+    #root_node.print_tree(0)
     return othello.possible_puts(color)[np.argmax([child.chosen for child in root_node.children])]
 
 

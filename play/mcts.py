@@ -17,10 +17,10 @@ class MctsNode:
         result+=f"\nwin={self.wins}\nchosen={self.chosen}"
         return result
     
-    def print_tree(self,depth):
-        print("  "*depth+f"win={self.wins} chosen={self.chosen}")
-        for child in self.children:
-            child.print_tree(depth+1)
+    #def print_tree(self,depth):
+        #print("  "*depth+f"win={self.wins} chosen={self.chosen}")
+        #for child in self.children:
+            #child.print_tree(depth+1)
 
 
     def uct(self):
