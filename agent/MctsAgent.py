@@ -12,14 +12,15 @@ import tqdm
 from ray.experimental import tqdm_ray
 from time import perf_counter
 
-if not ray.is_initialized:
-    ray.init(num_cpus=4)
-
 
 class MctsAgent(Agent):
+    num_cpus = 8
+
     def __init__(
         self, playout_num: int, verbose: int = 0, use_ray: bool = True
     ) -> None:
+        if not ray.is_initialized:
+            ray.init(num_cpus=MctsAgent.num_cpus)
         self.playout_num = playout_num
         self.verbose = verbose
         self.use_ray = use_ray
@@ -34,36 +35,32 @@ class MctsAgent(Agent):
         return mcts_node
 
     def act_with_ray(self, state: State) -> Action:
-        root_node = MctsNode([], state)
+        root_node = MctsNode([], state, None)
         root_node.expand()
+        root_node = ray.put(root_node)
 
-        each_playout_num = self.playout_num // 4
+        each_playout_num = self.playout_num // MctsAgent.num_cpus
         refs = [
-            MctsAgent.mcts_playout.remote(root_node, each_playout_num, self.verbose),
-            MctsAgent.mcts_playout.remote(root_node, each_playout_num, self.verbose),
-            MctsAgent.mcts_playout.remote(root_node, each_playout_num, self.verbose),
-            MctsAgent.mcts_playout.remote(root_node, each_playout_num, self.verbose),
+            MctsAgent.mcts_playout.remote(root_node, each_playout_num, self.verbose)
+            for _ in range(MctsAgent.num_cpus)
         ]
-        # print(root_node, type(root_node))
         nodes: list[MctsNode] = ray.get(refs)
+        a: MctsNode = ray.get([root_node])[0]
+        print(a.print_tree(0))
         for node in nodes:
             for i in range(len(node.children)):
                 root_node.children[i].chosen += node.children[i].chosen
-        return OthelloEnv.valid_actions(state)[
-            np.argmax([child.chosen for child in root_node.children])
-        ]
+        return max(root_node.children, key=lambda c: c.chosen).action
 
     def act_without_ray(self, state: State) -> Action:
-        root_node = MctsNode([], state)
+        root_node = MctsNode([], state, None)
         for _ in (
             tqdm.tqdm(range(self.playout_num))
             if self.verbose > 0
             else range(self.playout_num)
         ):
             root_node.search_node_must_be_playouted().playout()
-        return OthelloEnv.valid_actions(state)[
-            np.argmax([child.chosen for child in root_node.children])
-        ]
+        return max(root_node.children, key=lambda c: c.chosen).action
 
     def act(self, state: State) -> Action:
         if self.use_ray:
@@ -129,12 +126,13 @@ class McAgent(Agent):
 class MctsNode:
     random_agent = RandomAgent()
 
-    def __init__(self, parents: list[Self], state: State):
+    def __init__(self, parents: list[Self], state: State, action: Action | None):
         self.state = state
         self.parents = parents
         self.children: list[Self] = []
         self.chosen = 0
         self.wins = 0
+        self.action = action
 
     def __str__(self):
         result = str(self.state)
@@ -151,17 +149,11 @@ class MctsNode:
         for i in range(len(self.parents[-1].children)):
             N += self.parents[-1].children[i].chosen
         return self.wins / (self.chosen + 1) + math.sqrt(
-            2 * math.log(N) / (self.chosen + 1)
+            math.log(N) / (self.chosen + 1)
         )
 
     def choise_best_child(self) -> Self:
-        best_child: Self = None
-        best_uct = -1
-        for i in range(len(self.children)):
-            if best_uct < self.children[i].uct():
-                best_uct = self.children[i].uct()
-                best_child = self.children[i]
-        return best_child
+        return max(self.children, key=lambda c: c.uct())
 
     # self.childrenに子孫追加
     def expand(self):
@@ -169,7 +161,7 @@ class MctsNode:
         new_parents.append(self)
         for action in OthelloEnv.valid_actions(self.state):
             next_state, _, done = OthelloEnv.step(self.state, action)
-            child = MctsNode(new_parents, next_state)
+            child = MctsNode(new_parents, next_state, action)
             self.children.append(child)
 
     # tannsaku\お探す
@@ -184,19 +176,20 @@ class MctsNode:
 
     # ランダムプレイする
     def playout(self):
-        winner = OthelloEnv.winner(
-            OthelloEnv.play(
-                MctsNode.random_agent,
-                MctsNode.random_agent,
-                init_state=self.state,
-                do_print=False,
-            )
-        ).reverse()
+        result = OthelloEnv.play(
+            MctsNode.random_agent,
+            MctsNode.random_agent,
+            init_state=self.state,
+            do_print=False,
+        )
+        winner = OthelloEnv.winner(result).reverse()
+        _, b, w = OthelloEnv.count(result)
+        reward = abs(b - w) / SIZE / SIZE
 
         self.chosen += 1
         if winner == self.state.color:
-            self.wins += 1
+            self.wins += reward
         for parent in self.parents:
             if parent.state.color == winner:
-                parent.wins += 1
+                parent.wins += reward
             parent.chosen += 1

@@ -83,6 +83,7 @@ class DqnAgent(Agent):
     def _build_model(self):
         model = Sequential()
         relu = Activation("relu")
+        kernel_initializer = HeNormal()
         model.add(Input(shape=(SIZE, SIZE, 2)))
         model.add(
             Conv2D(
@@ -90,6 +91,7 @@ class DqnAgent(Agent):
                 3,
                 padding="same",
                 use_bias=False,
+                kernel_initializer=kernel_initializer,
             )
         )
         model.add(BatchNormalization())
@@ -100,6 +102,7 @@ class DqnAgent(Agent):
                 3,
                 padding="same",
                 use_bias=False,
+                kernel_initializer=kernel_initializer,
             )
         )
         model.add(BatchNormalization())
@@ -110,6 +113,7 @@ class DqnAgent(Agent):
                 3,
                 padding="valid",
                 use_bias=False,
+                kernel_initializer=kernel_initializer,
             )
         )
         model.add(BatchNormalization())
@@ -120,23 +124,24 @@ class DqnAgent(Agent):
                 3,
                 padding="valid",
                 use_bias=False,
+                kernel_initializer=kernel_initializer,
             )
         )
         model.add(BatchNormalization())
         model.add(relu)
         model.add(Flatten())
 
-        model.add(Dense(1024, use_bias=False))
+        model.add(Dense(1024, kernel_initializer=kernel_initializer))
         model.add(BatchNormalization())
         model.add(relu)
         model.add(Dropout(0.3))
 
-        model.add(Dense(512, use_bias=False))
+        model.add(Dense(512, kernel_initializer=kernel_initializer))
         model.add(BatchNormalization())
         model.add(relu)
         model.add(Dropout(0.3))
 
-        model.add(Dense(SIZE * SIZE))
+        model.add(Dense(SIZE * SIZE, kernel_initializer=kernel_initializer))
         model.add(BatchNormalization())
         model.add(Activation("tanh"))
         model.compile(
@@ -153,6 +158,7 @@ class DqnAgent(Agent):
     def tanh_crossentropy(y_true, y_pred):
         return categorical_crossentropy((y_true + 1) / 2, (y_pred + 1) / 2)
 
+    @staticmethod
     def tanh_mse(y_true, y_pred):
         return mean_squared_error(y_true * 10, y_pred * 10)
 
@@ -177,9 +183,14 @@ class DqnAgent(Agent):
             if not done:
                 nx_valid = {a.index for a in OthelloEnv.valid_actions(next_state)}
                 nx_p = y_next[i]
-                target = -self.gamma * np.amax(
-                    [v if i in nx_valid else -2 for i, v in enumerate(nx_p)]
-                )
+                if state.color == next_state.color:
+                    target = reward + self.gamma * np.amax(
+                        [v if i in nx_valid else -2 for i, v in enumerate(nx_p)]
+                    )
+                else:
+                    target = reward - self.gamma * np.amax(
+                        [v if i in nx_valid else -2 for i, v in enumerate(nx_p)]
+                    )
             else:
                 target = reward
 

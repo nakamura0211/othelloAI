@@ -15,7 +15,7 @@ def train():
     each_episodes = 50
     batch_size = 1024
     n_parallel_selfplay = num_cpus - 1
-    current_weights = agent.model.get_weights()
+    current_weights = ray.put(agent.model.get_weights())
     work_in_progresses = [
         self_play.remote(agent.epsilon, current_weights, each_episodes)
         for _ in range(n_parallel_selfplay)
@@ -31,8 +31,7 @@ def train():
             )
             if len(agent.memory) > batch_size:
                 agent.train(batch_size)
-                current_weights = agent.model.get_weights()
-
+                current_weights = ray.put(agent.model.get_weights())
         agent.model.save(f"model/dqn{i*50}.keras")
 
 

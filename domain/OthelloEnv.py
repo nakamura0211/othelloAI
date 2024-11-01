@@ -35,11 +35,15 @@ tried to put {action.cord}
 valid actions were {[i.cord for i in valid_actions(state)]}
 """
         )
-    if len(valid_actions(next_state)) == 0:
+    if is_done(next_state):
         _, black, white = count(state)
         reward = black - white if state.color == Color.BLACK else white - black
         return next_state, reward / SIZE / SIZE, True
-    return next_state, 0, False
+    nx_acts = valid_actions(next_state)
+    if next_state.color == state.color:
+        return next_state, len(nx_acts) / (SIZE * SIZE), False
+    else:
+        return next_state, -len(nx_acts) / (SIZE * SIZE), False
 
 
 def put(state: State, action: Action) -> State | None:  # next_state
@@ -53,6 +57,8 @@ def put(state: State, action: Action) -> State | None:  # next_state
         dx, dy = dirs[i]
         for j in range(l + 1):
             next_state.board[y + dy * j][x + dx * j] = color
+    if len(valid_actions(next_state)) == 0:
+        next_state.color = next_state.color.reverse()
     return next_state
 
 
@@ -98,7 +104,10 @@ def count(state: State) -> tuple[int, int, int]:
 
 
 def is_done(state: State) -> bool:
-    return len(valid_actions(state)) == 0
+    return (
+        len(valid_actions(state)) == 0
+        and len(valid_actions(state.copy(color=state.color.reverse()))) == 0
+    )
 
 
 def winner(state: State) -> Color | None:
