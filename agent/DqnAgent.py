@@ -14,7 +14,11 @@ from keras.src.layers import (
     Dropout,
 )
 import tensorflow as tf
-from keras.src.losses import categorical_crossentropy, mean_squared_error
+from keras.src.losses import (
+    categorical_crossentropy,
+    mean_squared_error,
+    mean_absolute_error,
+)
 from keras.src.initializers import HeNormal
 from keras.src.optimizers import Adam, SGD
 from tqdm import tqdm
@@ -30,7 +34,7 @@ class DqnAgent(Agent):
         self.epsilon = epsilon
         self.epsilon_min = 0.01
         self.epsilon_decay = 0.98
-        self.learning_rate = 0.0001
+        self.learning_rate = 0.000005
         self.model = self._build_model()
         if weights is not None and len(weights) != 0:
             self.model.set_weights(weights)
@@ -145,12 +149,9 @@ class DqnAgent(Agent):
         model.add(BatchNormalization())
         model.add(Activation("tanh"))
         model.compile(
-            loss=self.tanh_crossentropy,
-            optimizer=Adam(learning_rate=self.learning_rate, clipnorm=1),
-            metrics=[
-                "accuracy",
-                "cosine_similarity",
-            ],
+            loss=CosineSimilarityLoss(),
+            optimizer=Adam(learning_rate=self.learning_rate),
+            metrics=["accuracy", "mean_absolute_error"],
         )
         return model
 
@@ -269,3 +270,16 @@ class DqnNetwork(keras.Model):
 
     def build(self, input_shape):
         super(DqnNetwork, self).build(input_shape)
+
+
+class CosineSimilarityLoss(keras.losses.Loss):
+    def __init__(self, name="cosine_similarity_loss"):
+        super().__init__(name=name)
+
+    def call(self, y_true, y_pred):
+        y_true_normalized = tf.nn.l2_normalize(y_true, axis=-1)
+        y_pred_normalized = tf.nn.l2_normalize(y_pred, axis=-1)
+        cosine_similarity = tf.reduce_sum(
+            y_true_normalized * y_pred_normalized, axis=-1
+        )
+        return 1.0 - cosine_similarity

@@ -39,11 +39,7 @@ valid actions were {[i.cord for i in valid_actions(state)]}
         _, black, white = count(state)
         reward = black - white if state.color == Color.BLACK else white - black
         return next_state, reward / SIZE / SIZE, True
-    nx_acts = valid_actions(next_state)
-    if next_state.color == state.color:
-        return next_state, len(nx_acts) / (SIZE * SIZE), False
-    else:
-        return next_state, -len(nx_acts) / (SIZE * SIZE), False
+    return next_state, 0, False
 
 
 def put(state: State, action: Action) -> State | None:  # next_state
