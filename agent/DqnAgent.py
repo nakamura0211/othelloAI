@@ -18,13 +18,25 @@ from keras.src.losses import (
     categorical_crossentropy,
     mean_squared_error,
     mean_absolute_error,
+    huber,
 )
 from keras.src.initializers import HeNormal
 from keras.src.optimizers import Adam, SGD
+from keras.src.callbacks import TensorBoard
 from tqdm import tqdm
 
 from domain import OthelloEnv
 from domain.models import *
+
+
+@dataclass
+class HyperParam:
+    learning_rate: float
+    epsilon: float
+    epsilon_min: float
+    epsilon_decay: float
+    gamma: float
+    memory_maxlen: int
 
 
 class DqnAgent(Agent):
@@ -38,51 +50,6 @@ class DqnAgent(Agent):
         self.model = self._build_model()
         if weights is not None and len(weights) != 0:
             self.model.set_weights(weights)
-
-    def _build_small_model(self):
-        model = Sequential()
-        relu = Activation("relu")
-        model.add(Input(shape=(SIZE, SIZE, 2)))
-        model.add(
-            Conv2D(
-                512,
-                3,
-                padding="same",
-                use_bias=False,
-            )
-        )
-        model.add(BatchNormalization())
-        model.add(relu)
-        model.add(
-            Conv2D(
-                512,
-                3,
-                padding="valid",
-                use_bias=False,
-            )
-        )
-        model.add(BatchNormalization())
-        model.add(relu)
-
-        model.add(Flatten())
-
-        model.add(Dense(512, use_bias=False))
-        model.add(BatchNormalization())
-        model.add(relu)
-        model.add(Dropout(0.3))
-
-        model.add(Dense(SIZE * SIZE))
-        model.add(BatchNormalization())
-        model.add(Activation("tanh"))
-        model.compile(
-            loss=self.tanh_crossentropy,
-            optimizer=Adam(learning_rate=self.learning_rate, clipnorm=1),
-            # optimizer=SGD(learning_rate=self.learning_rate, clipnorm=1),
-            metrics=[
-                "cosine_similarity",
-            ],  # "sparse_categorical_accuracy",
-        )
-        return model
 
     def _build_model(self):
         model = Sequential()
@@ -149,9 +116,9 @@ class DqnAgent(Agent):
         model.add(BatchNormalization())
         model.add(Activation("tanh"))
         model.compile(
-            loss=CosineSimilarityLoss(),
+            loss=huber,
             optimizer=Adam(learning_rate=self.learning_rate),
-            metrics=["accuracy", "mean_absolute_error"],
+            metrics=["cosine_similarity", "mean_absolute_error"],
         )
         return model
 
@@ -207,7 +174,7 @@ class DqnAgent(Agent):
             y.append(target_y.reshape((SIZE * SIZE)))
         if self.epsilon > self.epsilon_min:
             self.epsilon *= self.epsilon_decay
-        self.model.fit(np.array(x), np.array(y), epochs=1, verbose=1)
+        self.model.fit(np.array(x), np.array(y), epochs=2, verbose=1)
 
     def act(self, state: State) -> Action:
         if np.random.rand() <= self.epsilon:
