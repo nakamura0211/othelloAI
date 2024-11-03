@@ -116,9 +116,9 @@ class DqnAgent(Agent):
         model.add(BatchNormalization())
         model.add(Activation("tanh"))
         model.compile(
-            loss=huber,
+            loss=CosineSimilarityLoss(),
             optimizer=Adam(learning_rate=self.learning_rate),
-            metrics=["cosine_similarity", "mean_absolute_error"],
+            metrics=["mean_absolute_error"],
         )
         return model
 
@@ -174,7 +174,7 @@ class DqnAgent(Agent):
             y.append(target_y.reshape((SIZE * SIZE)))
         if self.epsilon > self.epsilon_min:
             self.epsilon *= self.epsilon_decay
-        self.model.fit(np.array(x), np.array(y), epochs=2, verbose=1)
+        self.model.fit(np.array(x), np.array(y), epochs=1, verbose=1)
 
     def act(self, state: State) -> Action:
         if np.random.rand() <= self.epsilon:
