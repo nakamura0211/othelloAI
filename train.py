@@ -5,6 +5,7 @@ from tqdm import tqdm
 import ray
 from ray.experimental import tqdm_ray
 from collections import deque
+import tensorflow as tf
 
 
 def train():
@@ -32,6 +33,10 @@ def train():
             if len(agent.memory) > batch_size:
                 agent.train(batch_size)
                 current_weights = ray.put(agent.model.get_weights())
+        try:
+            agent.model.save(f"/content/drive/My Drive/Colab Notebooks/dqn.keras")
+        except:
+            pass
         agent.model.save(f"model/dqn{i*50}.keras")
 
 

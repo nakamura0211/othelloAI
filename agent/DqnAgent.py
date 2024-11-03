@@ -41,7 +41,7 @@ class HyperParam:
 
 class DqnAgent(Agent):
     def __init__(self, epsilon: float = 1.0, weights: list | None = None):
-        self.memory = deque[tuple[State, Action, int, State, bool]](maxlen=20000)
+        self.memory = deque[tuple[State, Action, int, State, bool]](maxlen=50000)
         self.gamma = 0.998
         self.epsilon = epsilon
         self.epsilon_min = 0.01
