@@ -11,7 +11,7 @@ from tqdm import tqdm
 import ray
 
 target_agent = DqnAgent(0)
-target_agent.load("model/dqn1500.keras")
+target_agent.load("model/dqn.keras")
 # target_agent.load("model/dqn450.keras")
 opp_agent = RandomAgent()  # MctsAgent(1000, 1)
 simulation_times = 50

@@ -39,9 +39,17 @@ class HyperParam:
     memory_maxlen: int
 
 
+@dataclass
+class Experience:
+    state: State
+    action: Action
+    reward: float
+    next_state: State
+    done: bool
+
+
 class DqnAgent(Agent):
     def __init__(self, epsilon: float = 1.0, weights: list | None = None):
-        self.memory = deque[tuple[State, Action, int, State, bool]](maxlen=50000)
         self.gamma = 0.998
         self.epsilon = epsilon
         self.epsilon_min = 0.01
@@ -118,9 +126,13 @@ class DqnAgent(Agent):
         model.compile(
             loss=CosineSimilarityLoss(),
             optimizer=Adam(learning_rate=self.learning_rate),
-            metrics=["mean_absolute_error"],
+            metrics=["cosine_similarity", "mean_absolute_error"],
         )
         return model
+
+    @staticmethod
+    def dqn_loss(y_true, y_pred):
+        return tf.reduce_mean(tf.square(y_true - y_pred))
 
     @staticmethod
     def tanh_crossentropy(y_true, y_pred):
@@ -130,47 +142,41 @@ class DqnAgent(Agent):
     def tanh_mse(y_true, y_pred):
         return mean_squared_error(y_true * 10, y_pred * 10)
 
-    def remember(
-        self, state: State, action: Action, reward: int, next_state: State, done: bool
-    ):
-        self.memory.append((state, action, reward, next_state, done))
-
-    def train(self, batch_size):
-        minibatch = random.sample(self.memory, batch_size)
+    def train(self, minibatch: list[Experience]):
         x = []
         y = []
         x_next = []
         x_cur = []
-        for state, action, reward, next_state, done in minibatch:
-            x_next.append(next_state.to_image())
-            x_cur.append(state.to_image())
+        for exp in minibatch:
+            x_next.append(exp.next_state.to_image())
+            x_cur.append(exp.state.to_image())
         y_next = self.model.predict(np.array(x_next), verbose=0)
         target_ys = self.model.predict(np.array(x_cur), verbose=0)
 
-        for i, (state, action, reward, next_state, done) in enumerate(minibatch):
-            if not done:
-                nx_valid = {a.index for a in OthelloEnv.valid_actions(next_state)}
+        for i, exp in enumerate(minibatch):
+            if not exp.done:
+                nx_valid = {a.index for a in OthelloEnv.valid_actions(exp.next_state)}
                 nx_p = y_next[i]
-                if state.color == next_state.color:
-                    target = reward + self.gamma * np.amax(
+                if exp.state.color == exp.next_state.color:
+                    target = exp.reward + self.gamma * np.amax(
                         [v if i in nx_valid else -2 for i, v in enumerate(nx_p)]
                     )
                 else:
-                    target = reward - self.gamma * np.amax(
+                    target = exp.reward - self.gamma * np.amax(
                         [v if i in nx_valid else -2 for i, v in enumerate(nx_p)]
                     )
             else:
-                target = reward
+                target = exp.reward
 
             target_y = target_ys[i]
-            target_y[action.index] = target
+            target_y[exp.action.index] = target
             invalid_mask = 0
-            valid_actions = {a.index for a in OthelloEnv.valid_actions(state)}
+            valid_actions = {a.index for a in OthelloEnv.valid_actions(exp.state)}
             for i in range(SIZE * SIZE):
                 if i not in valid_actions:
                     target_y[i] = invalid_mask
 
-            x.append(state.to_image())
+            x.append(exp.state.to_image())
             y.append(target_y.reshape((SIZE * SIZE)))
         if self.epsilon > self.epsilon_min:
             self.epsilon *= self.epsilon_decay
@@ -188,55 +194,17 @@ class DqnAgent(Agent):
         )
 
     def policy(self, state: State) -> list[float]:
-        return self.model.predict(state.to_image().reshape((1, SIZE, SIZE, 2)))[
-            0
-        ]  # * (1 if state.color == Color.BLACK else -1)
+        return self.model.predict(state.to_image().reshape((1, SIZE, SIZE, 2)))[0]
+
+    def Q(self, state: State, action: Action):
+        return self.policy(state)[action.index]
 
     def load(self, name):
+
         self.model.load_weights(name)
 
     def save(self, name):
         self.model.save_weights(name)
-
-
-class DqnNetwork(keras.Model):
-    def __init__(self):
-        super(DqnNetwork, self).__init__()
-        self.conv1 = Conv2D(
-            512,
-            (3, 3),
-            activation="relu",
-            padding="same",
-            use_bias=False,
-            kernel_initializer=HeNormal(),
-        )
-        self.bn1 = BatchNormalization()
-        self.conv2 = Conv2D(
-            512,
-            (3, 3),
-            activation="relu",
-            padding="same",
-            use_bias=False,
-            kernel_initializer=HeNormal(),
-        )
-        self.bn2 = BatchNormalization()
-        self.flatten = Flatten()
-        self.dense1 = Dense(
-            SIZE * SIZE * 2, activation="relu", kernel_initializer=HeNormal()
-        )
-        self.dence2 = Dense(SIZE * SIZE)
-        self.bn3 = BatchNormalization()
-        self.tanh = Activation("tanh")
-
-    def call(self, x):
-        x = Input((SIZE, SIZE, 3))(x)
-        x = self.bn1(self.conv1(x))
-        x = self.bn2(self.conv2(x))
-        x = self.dense1(self.flatten(x))
-        return self.tanh(self.bn3(self.dence2(x)))
-
-    def build(self, input_shape):
-        super(DqnNetwork, self).build(input_shape)
 
 
 class CosineSimilarityLoss(keras.losses.Loss):
@@ -250,3 +218,51 @@ class CosineSimilarityLoss(keras.losses.Loss):
             y_true_normalized * y_pred_normalized, axis=-1
         )
         return 1.0 - cosine_similarity
+
+
+class Memory:
+    def __init__(self, maxlen: int = 200000):
+        self.transition = deque[Experience](maxlen=maxlen)
+        self.priorities = deque(maxlen=maxlen)
+        self.total_p = 0
+
+    def _error_to_priority(self, error_batch):
+        priority_batch = []
+        for error in error_batch:
+            priority_batch.append(abs(error) ** 0.6 + 0.00001)
+        return priority_batch
+
+    def length(self):
+        return len(self.transition)
+
+    def add(self, transiton_batch, error_batch):
+        priority_batch = self._error_to_priority(error_batch)
+        self.priorities.extend(priority_batch)
+        self.transition.extend(transiton_batch)
+        self.total_p = sum(self.priorities)
+
+    def sample(self, n) -> list[Experience]:
+        batch = []
+        idx_batch = []
+        segment = self.total_p / n
+
+        idx = -1
+        sum_p = 0
+        for i in range(n):
+            a = segment * i
+            b = segment * (i + 1)
+
+            s = random.uniform(a, b)
+            while sum_p < s:
+                sum_p += self.priorities[idx]
+                idx += 1
+            idx_batch.append(idx)
+            batch.append(self.transition[idx])
+        return batch
+
+    def update(self, idx_batch, error_batch):
+        priority_batch = self._error_to_priority(error_batch)
+        for i in range(len(idx_batch)):
+            change = priority_batch[i] - self.priorities[idx_batch[i]]
+            self.total_p += change
+            self.priorities[idx_batch[i]] = priority_batch[i]
