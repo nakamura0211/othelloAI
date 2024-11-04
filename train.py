@@ -18,7 +18,7 @@ def train():
     n_episodes = 10000
     each_episodes = 50
     batch_size = 1024
-    n_parallel_selfplay = num_cpus - 1
+    n_parallel_selfplay = num_cpus
     current_weights = ray.put(agent.model.get_weights())
     work_in_progresses = [
         self_play.remote(agent.epsilon, current_weights, each_episodes)
