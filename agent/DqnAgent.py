@@ -230,11 +230,14 @@ class Memory:
         self.transition = deque[Experience](maxlen=maxlen)
         self.priorities = deque(maxlen=maxlen)
         self.total_p = 0
+        self.a = 1.0
+        self.a_decay = -0.001
+        self.a_min = 0
 
     def _error_to_priority(self, error_batch):
         priority_batch = []
         for error in error_batch:
-            priority_batch.append(abs(error) ** 0.6 + 0.00001)
+            priority_batch.append(abs(error) ** self.a + 0.00001)
         return priority_batch
 
     def length(self):
@@ -245,6 +248,10 @@ class Memory:
         self.priorities.extend(priority_batch)
         self.transition.extend(transiton_batch)
         self.total_p = sum(self.priorities)
+        if self.a > self.a_min:
+            self.a -= self.a_decay
+        else:
+            self.a = self.a_min
 
     def sample(self, n) -> list[Experience]:
         batch = []

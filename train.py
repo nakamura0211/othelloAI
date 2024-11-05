@@ -14,7 +14,7 @@ import sys
 def train():
     num_cpus = 7
     ray.init(num_cpus=num_cpus)
-    global_memory = Memory()
+    global_memory = Memory(50000)
     agent = DqnAgent()
     n_episodes = 10000
     each_episodes = 50
