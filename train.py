@@ -62,6 +62,12 @@ def self_play(epsilon: int, weights: list, play_num):
             if done:
                 break
 
+    err = []
+    for exp in memory:
+        _, b, w = OthelloEnv.count(exp.state)
+        err.append(b + w)
+    return memory, err
+
     nx_state = []
     cur_state = []
     for exp in memory:
@@ -72,7 +78,7 @@ def self_play(epsilon: int, weights: list, play_num):
     nx_tgt_pl = agent.target.predict(np.array(nx_state), verbose=0)
     cur_pl = agent.model.predict(np.array(cur_state), verbose=0)
 
-    td_err = []
+    """td_err = []
     for i in range(len(memory)):
         valid = {a.index for a in OthelloEnv.valid_actions(memory[i].next_state)}
 
@@ -88,7 +94,7 @@ def self_play(epsilon: int, weights: list, play_num):
                 memory[i].reward
                 - agent.gamma * nx_tgt_pl[i][act]
                 - cur_pl[i][memory[i].action.index]
-            )
+            )"""
     return memory, td_err
 
 
