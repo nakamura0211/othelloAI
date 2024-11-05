@@ -58,6 +58,11 @@ class DqnAgent(Agent):
         self.model = self._build_model()
         if weights is not None and len(weights) != 0:
             self.model.set_weights(weights)
+        self.target = self._build_model()
+        self.sync_network()
+
+    def sync_network(self):
+        self.target.set_weights(self.model.weights)
 
     def _build_model(self):
         model = Sequential()
@@ -151,20 +156,20 @@ class DqnAgent(Agent):
             x_next.append(exp.next_state.to_image())
             x_cur.append(exp.state.to_image())
         y_next = self.model.predict(np.array(x_next), verbose=0)
+        y_next_target = self.target.predict(np.array(x_next), verbose=0)
         target_ys = self.model.predict(np.array(x_cur), verbose=0)
 
         for i, exp in enumerate(minibatch):
             if not exp.done:
                 nx_valid = {a.index for a in OthelloEnv.valid_actions(exp.next_state)}
-                nx_p = y_next[i]
+                best_nx_act = np.argmax(
+                    [v if i in nx_valid else -2 for i, v in enumerate(y_next[i])]
+                )
+                nx_act_value = y_next_target[i][best_nx_act]
                 if exp.state.color == exp.next_state.color:
-                    target = exp.reward + self.gamma * np.amax(
-                        [v if i in nx_valid else -2 for i, v in enumerate(nx_p)]
-                    )
+                    target = exp.reward + self.gamma * nx_act_value
                 else:
-                    target = exp.reward - self.gamma * np.amax(
-                        [v if i in nx_valid else -2 for i, v in enumerate(nx_p)]
-                    )
+                    target = exp.reward - self.gamma * nx_act_value
             else:
                 target = exp.reward
 
