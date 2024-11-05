@@ -43,8 +43,6 @@ valid actions were {[i.cord for i in valid_actions(state)]}
             reward = 0.3 + (black - white) / SIZE / SIZE * 0.7
         else:
             reward = 0.3 + (white - black) / SIZE / SIZE * 0.7
-
-        reward = black - white if state.color == Color.BLACK else white - black
         return next_state, reward, True
     return next_state, 0, False
 
