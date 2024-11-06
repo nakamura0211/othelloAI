@@ -9,11 +9,12 @@ from collections import deque
 import tensorflow as tf
 import numpy as np
 import sys
+import gc
 
 
 def train():
     num_cpus = 7
-    ray.init(num_cpus=num_cpus, object_store_memory=1024 * 1024 * 1024 * 10)
+    ray.init(num_cpus=num_cpus)
     global_memory = SegmentMemory(80000, 4)  # Memory(50000)
     agent = DqnAgent()
     n_episodes = 10000
@@ -38,6 +39,7 @@ def train():
                 batch = global_memory.sample(batch_size)
                 agent.train(batch)
                 current_weights = agent.model.get_weights()
+        gc.collect()
         agent.sync_network()
         try:
             agent.model.save(f"/content/drive/My Drive/Colab Notebooks/dqn.keras")
