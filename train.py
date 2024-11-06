@@ -38,8 +38,9 @@ def train():
             if global_memory.length() > batch_size:
                 batch = global_memory.sample(batch_size)
                 agent.train(batch)
+                del current_weights
+                gc.collect()
                 current_weights = agent.model.get_weights()
-        gc.collect()
         agent.sync_network()
         try:
             agent.model.save(f"/content/drive/My Drive/Colab Notebooks/dqn.keras")
