@@ -1,6 +1,6 @@
 from domain import OthelloEnv
 from domain.models import *
-from agent.DqnAgent import DqnAgent, Memory, Experience
+from agent.DqnAgent import DqnAgent, Memory, Experience, SegmentMemory
 from agent.RandomAgent import RandomAgent
 from tqdm import tqdm
 import ray
@@ -14,7 +14,7 @@ import sys
 def train():
     num_cpus = 7
     ray.init(num_cpus=num_cpus)
-    global_memory = Memory(50000)
+    global_memory = SegmentMemory(50000, 4)  # Memory(50000)
     agent = DqnAgent()
     n_episodes = 10000
     each_episodes = 50
@@ -28,8 +28,8 @@ def train():
     for i in tqdm(range(1, n_episodes // 50 + 1), file=sys.stdout):
         for _ in tqdm(range(50), file=sys.stdout):
             finished, work_in_progresses = ray.wait(work_in_progresses, num_returns=1)
-            memory, td_err = ray.get(finished[0])
-            global_memory.add(memory, td_err)
+            memory = ray.get(finished[0])
+            global_memory.add(memory)
             # 120*each_episodes ぐらい追加される
             work_in_progresses.extend(
                 [self_play.remote(agent.epsilon, current_weights, each_episodes)]
@@ -46,7 +46,7 @@ def train():
         agent.model.save(f"model/dqn{i*50}.keras")
 
 
-@ray.remote(num_cpus=1, num_gpus=1)
+@ray.remote(num_cpus=1)
 def self_play(epsilon: int, weights: list, play_num):
     agent = DqnAgent(epsilon=epsilon, weights=weights)
     memory: list[Experience] = []
@@ -62,11 +62,7 @@ def self_play(epsilon: int, weights: list, play_num):
             if done:
                 break
 
-    err = []
-    for exp in memory:
-        _, b, w = OthelloEnv.count(exp.state)
-        err.append(b + w)
-    return memory, err
+    return memory
 
     nx_state = []
     cur_state = []

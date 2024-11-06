@@ -50,10 +50,10 @@ class Experience:
 
 class DqnAgent(Agent):
     def __init__(self, epsilon: float = 1.0, weights: list | None = None):
-        self.gamma = 0.998
+        self.gamma = 1
         self.epsilon = epsilon
         self.epsilon_min = 0.01
-        self.epsilon_decay = 0.98
+        self.epsilon_decay = 0.999
         self.learning_rate = 0.000005
         self.model = self._build_model()
         if weights is not None and len(weights) != 0:
@@ -278,3 +278,42 @@ class Memory:
             change = priority_batch[i] - self.priorities[idx_batch[i]]
             self.total_p += change
             self.priorities[idx_batch[i]] = priority_batch[i]
+
+
+class SegmentMemory:
+    def __init__(self, maxlen, memory_len):
+        each_len = maxlen // memory_len
+        self.memory_len = memory_len
+        self.memories = [deque(maxlen=each_len) for _ in range(memory_len)]
+        self.rate_decay = 0.1
+        self.rate_decay_grow = 0.001
+        self.rate_decay_max = 1
+
+    def length(self):
+        return len(self.memories[0])
+
+    def add(self, transiton_batch: list[Experience]):
+        n = SIZE * SIZE // self.memory_len
+        for exp in transiton_batch:
+            blank, _, _ = OthelloEnv.count(exp.state)
+            self.memories[blank // n].append(exp)
+        if self.rate_decay >= self.rate_decay_max:
+            self.rate_decay = self.rate_decay_max
+        else:
+            self.rate_decay += self.rate_decay_grow
+
+    def sample(self, n) -> list[Experience]:
+        allocate_rate = []
+        rate = 1
+        for _ in range(self.memory_len):
+            allocate_rate.append(rate)
+            rate *= self.rate_decay
+        result = []
+        rate_sum = sum(allocate_rate)
+        for i, rate in enumerate(allocate_rate):
+            ln = int(rate / rate_sum * n)
+            if len(self.memories[i]) <= ln:
+                result.extend(self.memories[i])
+            else:
+                result.extend(random.choices(self.memories[i], k=ln))
+        return result
