@@ -39,13 +39,14 @@ def train():
             agent.train(batch)
             current_weights = agent.model.get_weights()
 
-        if i % 50 == 0:
+        if i % 10 == 0:
             agent.sync_network()
+        if i % 50 == 0:
             try:
                 agent.model.save(f"/content/drive/My Drive/Colab Notebooks/dqn.keras")
             except:
                 pass
-            agent.model.save(f"model/dqn{i*50}.keras")
+            agent.model.save(f"model/dqn{i}.keras")
 
 
 @ray.remote(num_cpus=1)

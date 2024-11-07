@@ -121,12 +121,12 @@ class DqnAgent(Agent):
 
         x = Flatten()(x)
 
-        v = Dropout(0.3)(Dense(1024, activation="relu")(x))
-        v = Dropout(0.3)(Dense(512, activation="relu")(v))
+        v = Dropout(0.3)(relu(BatchNormalization()(Dense(512)(x))))
+        v = Dropout(0.3)(relu(BatchNormalization()(Dense(256)(v))))
         v = Dense(1)(v)
 
-        adv = Dropout(0.3)(Dense(1024, activation="relu")(x))
-        adv = Dropout(0.3)(Dense(512, activation="relu")(adv))
+        adv = Dropout(0.3)(relu(BatchNormalization()(Dense(512)(x))))
+        adv = Dropout(0.3)(relu(BatchNormalization()(Dense(512)(adv))))
         adv = Dense(SIZE * SIZE)(adv)
         y = concatenate([v, adv])
         outputs = Activation("tanh")(
@@ -143,7 +143,7 @@ class DqnAgent(Agent):
         model = Model(inputs=inputs, outputs=outputs)
 
         model.compile(
-            loss=CosineSimilarityLoss(),
+            loss=huber,
             optimizer=Adam(learning_rate=self.learning_rate),
             metrics=["cosine_similarity", "mean_absolute_error"],
         )
@@ -378,7 +378,7 @@ class SegmentMemory:
         each_len = maxlen // memory_len
         self.memory_len = memory_len
         self.memories = [deque(maxlen=each_len) for _ in range(memory_len)]
-        self.rate_decay = 0.1
+        self.rate_decay = 0.15
         self.rate_decay_grow = 0.001
         self.rate_decay_max = 1
 
