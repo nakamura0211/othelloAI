@@ -26,27 +26,26 @@ def train():
         self_play.remote(agent.epsilon, current_weights, each_episodes)
         for _ in range(n_parallel_selfplay)
     ]
-    for i in tqdm(range(1, n_episodes // 50 + 1), file=sys.stdout):
-        for _ in tqdm(range(50), file=sys.stdout):
-            finished, work_in_progresses = ray.wait(work_in_progresses, num_returns=1)
-            memory = ray.get(finished[0])
-            global_memory.add(memory)
-            # 120*each_episodes ぐらい追加される
-            work_in_progresses.extend(
-                [self_play.remote(agent.epsilon, current_weights, each_episodes)]
-            )
-            if global_memory.length() > batch_size:
-                batch = global_memory.sample(batch_size)
-                agent.train(batch)
-                del current_weights
-                gc.collect()
-                current_weights = agent.model.get_weights()
-        agent.sync_network()
-        try:
-            agent.model.save(f"/content/drive/My Drive/Colab Notebooks/dqn.keras")
-        except:
-            pass
-        agent.model.save(f"model/dqn{i*50}.keras")
+    for i in tqdm(range(1, n_episodes + 1), file=sys.stdout):
+        finished, work_in_progresses = ray.wait(work_in_progresses, num_returns=1)
+        memory = ray.get(finished[0])
+        global_memory.add(memory)
+        # 120*each_episodes ぐらい追加される
+        work_in_progresses.extend(
+            [self_play.remote(agent.epsilon, current_weights, each_episodes)]
+        )
+        if global_memory.length() > batch_size:
+            batch = global_memory.sample(batch_size)
+            agent.train(batch)
+            current_weights = agent.model.get_weights()
+
+        if i % 50 == 0:
+            agent.sync_network()
+            try:
+                agent.model.save(f"/content/drive/My Drive/Colab Notebooks/dqn.keras")
+            except:
+                pass
+            agent.model.save(f"model/dqn{i*50}.keras")
 
 
 @ray.remote(num_cpus=1)

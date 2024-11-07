@@ -3,7 +3,9 @@ import random
 import numpy as np
 from collections import deque
 import keras
-from keras import Sequential, Input
+from keras import Sequential
+from keras.src.models import Model
+import keras._tf_keras.keras.backend as K
 from keras.src.layers import (
     Flatten,
     Dense,
@@ -12,6 +14,9 @@ from keras.src.layers import (
     MaxPooling2D,
     Activation,
     Dropout,
+    Lambda,
+    Input,
+    concatenate,
 )
 import tensorflow as tf
 from keras.src.losses import (
@@ -55,14 +60,95 @@ class DqnAgent(Agent):
         self.epsilon_min = 0.01
         self.epsilon_decay = 0.999
         self.learning_rate = 0.000005
-        self.model = self._build_model()
+        self.model = self._build_dueling_model()
         if weights is not None and len(weights) != 0:
             self.model.set_weights(weights)
-        self.target = self._build_model()
+        self.target = self._build_dueling_model()
         self.sync_network()
 
     def sync_network(self):
         self.target.set_weights(self.model.weights)
+
+    def _build_dueling_model(self):
+        kernel_initializer = HeNormal()
+        relu = Activation("relu")
+        inputs = Input(shape=(SIZE, SIZE, 2))
+        x = relu(
+            BatchNormalization()(
+                Conv2D(
+                    512,
+                    3,
+                    padding="same",
+                    use_bias=False,
+                    kernel_initializer=kernel_initializer,
+                )(inputs)
+            )
+        )
+        x = relu(
+            BatchNormalization()(
+                Conv2D(
+                    512,
+                    3,
+                    padding="same",
+                    use_bias=False,
+                    kernel_initializer=kernel_initializer,
+                )(x)
+            )
+        )
+        x = relu(
+            BatchNormalization()(
+                Conv2D(
+                    512,
+                    3,
+                    padding="valid",
+                    use_bias=False,
+                    kernel_initializer=kernel_initializer,
+                )(x)
+            )
+        )
+
+        x = relu(
+            BatchNormalization()(
+                Conv2D(
+                    512,
+                    3,
+                    padding="valid",
+                    use_bias=False,
+                    kernel_initializer=kernel_initializer,
+                )(x)
+            )
+        )
+
+        x = Flatten()(x)
+
+        v = Dropout(0.3)(Dense(1024, activation="relu")(x))
+        v = Dropout(0.3)(Dense(512, activation="relu")(v))
+        v = Dense(1)(v)
+
+        adv = Dropout(0.3)(Dense(1024, activation="relu")(x))
+        adv = Dropout(0.3)(Dense(512, activation="relu")(adv))
+        adv = Dense(SIZE * SIZE)(adv)
+        y = concatenate([v, adv])
+        outputs = Activation("tanh")(
+            BatchNormalization()(
+                Lambda(
+                    lambda a: K.expand_dims(a[:, 0], -1)
+                    + a[:, 1:]
+                    - tf.stop_gradient(K.mean(a[:, 1:], keepdims=True)),
+                    output_shape=(SIZE * SIZE,),
+                )(y)
+            )
+        )
+
+        model = Model(inputs=inputs, outputs=outputs)
+
+        model.compile(
+            loss=CosineSimilarityLoss(),
+            optimizer=Adam(learning_rate=self.learning_rate),
+            metrics=["cosine_similarity", "mean_absolute_error"],
+        )
+
+        return model
 
     def _build_model(self):
         model = Sequential()
@@ -204,6 +290,13 @@ class DqnAgent(Agent):
     def Q(self, state: State, action: Action):
         return self.policy(state)[action.index]
 
+    def V(self, state: State) -> float:
+        policy = self.model.predict(
+            state.to_image().reshape((1, SIZE, SIZE, 2)), verbose=0
+        )[0]
+        valid = {action.index for action in OthelloEnv.valid_actions(state)}
+        return np.amax([v if i in valid else -2 for i, v in enumerate(policy)])
+
     def load(self, name):
 
         self.model.load_weights(name)
@@ -231,7 +324,7 @@ class Memory:
         self.priorities = deque(maxlen=maxlen)
         self.total_p = 0
         self.a = 1.0
-        self.a_decay = -0.001
+        self.a_decay = -0.0005
         self.a_min = 0
 
     def _error_to_priority(self, error_batch):
