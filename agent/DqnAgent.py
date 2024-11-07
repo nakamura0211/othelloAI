@@ -24,6 +24,7 @@ from keras.src.losses import (
     mean_squared_error,
     mean_absolute_error,
     huber,
+    Huber,
 )
 from keras.src.initializers import HeNormal
 from keras.src.optimizers import Adam, SGD
@@ -143,7 +144,7 @@ class DqnAgent(Agent):
         model = Model(inputs=inputs, outputs=outputs)
 
         model.compile(
-            loss=huber,
+            loss=Huber(delta=0.5),
             optimizer=Adam(learning_rate=self.learning_rate),
             metrics=["cosine_similarity", "mean_absolute_error"],
         )
