@@ -39,7 +39,7 @@ def train():
             agent.train(batch)
             current_weights = agent.model.get_weights()
 
-        if i % 10 == 0:
+        if i % 5 == 0:
             agent.sync_network()
         if i % 50 == 0:
             try:
