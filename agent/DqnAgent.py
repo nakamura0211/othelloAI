@@ -122,20 +122,18 @@ class DqnAgent(Agent):
 
         x = Flatten()(x)
 
-        v = Dropout(0.3)(relu(BatchNormalization()(Dense(512)(x))))
+        v = relu(BatchNormalization()(Dense(512)(x)))
         v = Dropout(0.3)(relu(BatchNormalization()(Dense(256)(v))))
         v = Dense(1)(v)
 
-        adv = Dropout(0.3)(relu(BatchNormalization()(Dense(512)(x))))
-        adv = Dropout(0.3)(relu(BatchNormalization()(Dense(512)(adv))))
+        adv = relu(BatchNormalization()(Dense(512)(x)))
+        adv = Dropout(0.3)(relu(BatchNormalization()(Dense(256)(adv))))
         adv = Dense(SIZE * SIZE)(adv)
         y = concatenate([v, adv])
         outputs = Activation("tanh")(
             BatchNormalization()(
                 Lambda(
-                    lambda a: K.expand_dims(a[:, 0], -1)
-                    + a[:, 1:]
-                    - tf.stop_gradient(K.mean(a[:, 1:], keepdims=True)),
+                    lambda a: K.expand_dims(a[:, 0], -1)+ a[:, 1:],
                     output_shape=(SIZE * SIZE,),
                 )(y)
             )
@@ -144,7 +142,7 @@ class DqnAgent(Agent):
         model = Model(inputs=inputs, outputs=outputs)
 
         model.compile(
-            loss=Huber(delta=0.5),
+            loss=CosineSimilarityLoss(),
             optimizer=Adam(learning_rate=self.learning_rate),
             metrics=["cosine_similarity", "mean_absolute_error"],
         )
