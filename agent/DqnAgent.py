@@ -61,10 +61,10 @@ class DqnAgent(Agent):
         self.epsilon_min = 0.01
         self.epsilon_decay = 0.999
         self.learning_rate = 0.000005
-        self.model = self._build_dueling_model()
+        self.model = self._build_model()
         if weights is not None and len(weights) != 0:
             self.model.set_weights(weights)
-        self.target = self._build_dueling_model()
+        self.target = self._build_model()
         self.sync_network()
 
     def sync_network(self):
@@ -133,7 +133,7 @@ class DqnAgent(Agent):
         outputs = Activation("tanh")(
             BatchNormalization()(
                 Lambda(
-                    lambda a: K.expand_dims(a[:, 0], -1)+ a[:, 1:],
+                    lambda a: K.expand_dims(a[:, 0], -1) + a[:, 1:],
                     output_shape=(SIZE * SIZE,),
                 )(y)
             )
@@ -200,15 +200,15 @@ class DqnAgent(Agent):
         model.add(relu)
         model.add(Flatten())
 
-        model.add(Dense(1024, kernel_initializer=kernel_initializer))
-        model.add(BatchNormalization())
-        model.add(relu)
-        model.add(Dropout(0.3))
-
         model.add(Dense(512, kernel_initializer=kernel_initializer))
         model.add(BatchNormalization())
         model.add(relu)
-        model.add(Dropout(0.3))
+        model.add(Dropout(0.2))
+
+        model.add(Dense(256, kernel_initializer=kernel_initializer))
+        model.add(BatchNormalization())
+        model.add(relu)
+        model.add(Dropout(0.2))
 
         model.add(Dense(SIZE * SIZE, kernel_initializer=kernel_initializer))
         model.add(BatchNormalization())
