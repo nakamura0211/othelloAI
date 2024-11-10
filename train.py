@@ -46,7 +46,33 @@ def train():
                 agent.model.save(f"/content/drive/My Drive/Colab Notebooks/dqn.keras")
             except:
                 pass
+            e = agent.epsilon
+            agent.epsilon = 0
+            t, o = bench_mark(agent)
+            agent.epsilon = e
+            print(f"\nscore: {t-o}")
+
             agent.model.save(f"model/dqn{i}.keras")
+
+
+def bench_mark(
+    target_agent: Agent, opp_agent: Agent = RandomAgent(), simulation_times=1
+):
+    target = 0
+    opp = 0
+    for i in range(simulation_times):
+        _, b, w = OthelloEnv.count(
+            OthelloEnv.play(target_agent, opp_agent, do_print=False)
+        )
+        target += b
+        opp += w
+    for i in range(simulation_times):
+        _, b, w = OthelloEnv.count(
+            OthelloEnv.play(opp_agent, target_agent, do_print=False)
+        )
+        target += w
+        opp += b
+    return target, opp
 
 
 @ray.remote(num_cpus=1)
