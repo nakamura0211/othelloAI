@@ -24,7 +24,9 @@ def train():
     n_parallel_selfplay = num_cpus
     current_weights = agent.model.get_weights()
     work_in_progresses = [
-        self_play.remote(agent.epsilon, current_weights, each_episodes)
+        self_play.remote(
+            agent.epsilon, agent.pb_epsilon, current_weights, each_episodes
+        )
         for _ in range(n_parallel_selfplay)
     ]
     for i in tqdm(range(1, n_episodes + 1), file=sys.stdout):
@@ -33,7 +35,11 @@ def train():
         global_memory.add(memory)
         # 120*each_episodes ぐらい追加される
         work_in_progresses.extend(
-            [self_play.remote(agent.epsilon, current_weights, each_episodes)]
+            [
+                self_play.remote(
+                    agent.epsilon, agent.pb_epsilon, current_weights, each_episodes
+                )
+            ]
         )
         if global_memory.length() > batch_size:
             batch = global_memory.sample(batch_size)
@@ -48,16 +54,19 @@ def train():
             except:
                 pass
             e = agent.epsilon
+            pe = agent.pb_epsilon
             agent.epsilon = 0
+            agent.pb_epsilon = 0
             t, o = bench_mark(agent)
             agent.epsilon = e
+            agent.pb_epsilon = pe
             print(f"\nscore: {t-o}")
 
             agent.model.save(f"model/dqn{i}.keras")
 
 
 def bench_mark(
-    target_agent: Agent, opp_agent: Agent = AlphaBetaAgent(1), simulation_times=1
+    target_agent: Agent, opp_agent: Agent = AlphaBetaAgent(0), simulation_times=1
 ):
     target = 0
     opp = 0
@@ -77,8 +86,8 @@ def bench_mark(
 
 
 @ray.remote(num_cpus=1)
-def self_play(epsilon: int, weights: list, play_num):
-    agent = DqnAgent(epsilon=epsilon, weights=weights)
+def self_play(epsilon: float, pb_epsilon: float, weights: list, play_num):
+    agent = DqnAgent(epsilon=epsilon, pb_epsilon=pb_epsilon, weights=weights)
     memory: list[Experience] = []
     for i in range(play_num):
         state = OthelloEnv.reset()

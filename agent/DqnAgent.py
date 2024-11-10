@@ -55,8 +55,13 @@ class Experience:
 
 
 class DqnAgent(Agent):
-    def __init__(self, epsilon: float = 1.0, weights: list | None = None):
+    def __init__(
+        self, epsilon: float = 1.0, pb_epsilon: float = 1.0, weights: list | None = None
+    ):
         self.gamma = 1
+        self.pb_epsilon = pb_epsilon
+        self.pb_epsilon_min = 0.4
+        self.pb_epsilon_decay = 0.999
         self.epsilon = epsilon
         self.epsilon_min = 0.01
         self.epsilon_decay = 0.999
@@ -283,9 +288,17 @@ class DqnAgent(Agent):
         act_values = self.model.predict(
             state.to_image().reshape(1, SIZE, SIZE, 2), verbose=0
         )
-        return Action(
-            np.argmax([v if i in valid else -2 for i, v in enumerate(act_values[0])])
+        filtered = np.array(
+            [v if i in valid else -1 for i, v in enumerate(act_values[0])]
         )
+        if np.random.rand() <= self.pb_epsilon:
+            print(f"{(filtered + 1) / 2}")
+            return Action(
+                random.choices(
+                    [i for i in range(SIZE * SIZE)], weights=(filtered + 1) / 2, k=1
+                )[0]
+            )
+        return Action(np.argmax(filtered))
 
     def policy(self, state: State) -> list[float]:
         return self.model.predict(state.to_image().reshape((1, SIZE, SIZE, 2)))[0]
