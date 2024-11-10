@@ -399,14 +399,14 @@ class SegmentMemory:
         self.memory_len = memory_len
         self.memories = [deque(maxlen=each_len) for _ in range(memory_len)]
         self.rate_decay = 0.15
-        self.rate_decay_grow = 0.001
-        self.rate_decay_max = 1
+        self.rate_decay_grow = 0.0005
+        self.rate_decay_max = 0.8
 
     def length(self):
         return len(self.memories[0])
 
     def add(self, transiton_batch: list[Experience]):
-        n = SIZE * SIZE // self.memory_len
+        n = (SIZE * SIZE - 4) // self.memory_len
         for exp in transiton_batch:
             blank, _, _ = OthelloEnv.count(exp.state)
             self.memories[blank // n].append(exp)
@@ -418,7 +418,7 @@ class SegmentMemory:
     def sample(self, n) -> list[Experience]:
         allocate_rate = []
         rate = 1
-        for _ in range(self.memory_len - 1):
+        for _ in range(self.memory_len):
             allocate_rate.append(rate)
             rate *= self.rate_decay
         result = []
