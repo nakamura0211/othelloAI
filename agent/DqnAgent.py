@@ -409,7 +409,10 @@ class SegmentMemory:
         n = (SIZE * SIZE - 4) // self.memory_len
         for exp in transiton_batch:
             blank, _, _ = OthelloEnv.count(exp.state)
-            self.memories[blank // n].append(exp)
+            if blank == SIZE * SIZE - 4:
+                self.memories[0].append(exp)
+            else:
+                self.memories[blank // n].append(exp)
         if self.rate_decay >= self.rate_decay_max:
             self.rate_decay = self.rate_decay_max
         else:
