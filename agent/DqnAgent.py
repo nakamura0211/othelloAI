@@ -418,7 +418,7 @@ class SegmentMemory:
     def sample(self, n) -> list[Experience]:
         allocate_rate = []
         rate = 1
-        for _ in range(self.memory_len):
+        for _ in range(self.memory_len - 1):
             allocate_rate.append(rate)
             rate *= self.rate_decay
         result = []
