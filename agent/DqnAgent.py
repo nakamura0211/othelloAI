@@ -298,11 +298,12 @@ class DqnAgent(Agent):
             if weights.sum() <= 0:
                 return random.choice(OthelloEnv.valid_actions(state))
             act = random.choices([i for i in range(SIZE * SIZE)], weights=weights)[0]
-            if act in valid:
-                return Action(act)
-            else:
-                return random.choice(OthelloEnv.valid_actions(state))
-        return Action(np.argmax(filtered))
+        else:
+            act = np.argmax(filtered)
+        if act in valid:
+            return Action(act)
+        else:
+            return random.choice(OthelloEnv.valid_actions(state))
 
     def policy(self, state: State) -> list[float]:
         return self.model.predict(state.to_image().reshape((1, SIZE, SIZE, 2)))[0]
