@@ -61,7 +61,7 @@ class DqnAgent(Agent):
         self.gamma = 1
         self.pb_epsilon = pb_epsilon
         self.pb_epsilon_min = 0.6
-        self.pb_epsilon_decay = 0.9995
+        self.pb_epsilon_decay = 0.9999
         self.epsilon = epsilon
         self.epsilon_min = 0.01
         self.epsilon_decay = 0.9992
