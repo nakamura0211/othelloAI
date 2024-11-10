@@ -60,11 +60,11 @@ class DqnAgent(Agent):
     ):
         self.gamma = 1
         self.pb_epsilon = pb_epsilon
-        self.pb_epsilon_min = 0.4
+        self.pb_epsilon_min = 0.6
         self.pb_epsilon_decay = 0.9995
         self.epsilon = epsilon
         self.epsilon_min = 0.01
-        self.epsilon_decay = 0.999
+        self.epsilon_decay = 0.9992
         self.learning_rate = 0.000005
         self.model = self._build_model()
         if weights is not None and len(weights) != 0:
@@ -276,15 +276,17 @@ class DqnAgent(Agent):
                     target_y[i] = invalid_mask
 
             x.append(exp.state.to_image())
-            y.append(target_y.reshape((SIZE * SIZE)))
+            y.append(target_y)
         if self.epsilon > self.epsilon_min:
             self.epsilon *= self.epsilon_decay
+        if self.pb_epsilon > self.pb_epsilon_min:
+            self.pb_epsilon *= self.pb_epsilon_decay
         self.model.fit(np.array(x), np.array(y), epochs=1, verbose=1)
 
     def act(self, state: State) -> Action:
         if np.random.rand() <= self.epsilon:
             return random.choice(OthelloEnv.valid_actions(state))
-        valid = [action.index for action in OthelloEnv.valid_actions(state)]
+        valid = {action.index for action in OthelloEnv.valid_actions(state)}
         act_values = self.model.predict(
             state.to_image().reshape(1, SIZE, SIZE, 2), verbose=0
         )
@@ -295,9 +297,11 @@ class DqnAgent(Agent):
             weights = (filtered + 1) / 2
             if weights.sum() <= 0:
                 return random.choice(OthelloEnv.valid_actions(state))
-            return Action(
-                random.choices([i for i in range(SIZE * SIZE)], weights=weights, k=1)[0]
-            )
+            act = random.choices([i for i in range(SIZE * SIZE)], weights=weights)[0]
+            if act in valid:
+                return Action(act)
+            else:
+                return random.choice(OthelloEnv.valid_actions(state))
         return Action(np.argmax(filtered))
 
     def policy(self, state: State) -> list[float]:

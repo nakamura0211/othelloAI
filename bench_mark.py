@@ -1,11 +1,6 @@
 from domain import OthelloEnv
 from domain.models import *
-from agent.AlphaBetaAgent import AlphaBetaAgent
-from agent.MctsAgent import MctsAgent, McAgent
-from agent.RandomAgent import RandomAgent
-from agent.StartsWithRandomAgent import StartsWithRandomAgent
-from agent.TerminalAgent import TerminalAgent
-from agent.DqnAgent import DqnAgent
+from agent import *
 from time import perf_counter
 from tqdm import tqdm
 import ray
@@ -47,9 +42,8 @@ def bench_mark(target_agent: Agent, opp_agent: Agent, simulation_times: int):
 
 
 if __name__ == "__main__":
-    target_agent = RandomAgent()
-    # target_agent.load("model/dqn2550.keras")
-    # target_agent.load("model/dqn450.keras")
+    target_agent = DqnAgent(0, 0)
+    target_agent.load("model/dqn1450 (2).keras")
     opp_agent = RandomAgent()  # MctsAgent(1000, 1)
     simulation_times = 50
     bench_mark(target_agent, opp_agent, simulation_times)
