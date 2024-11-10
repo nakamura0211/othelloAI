@@ -2,6 +2,7 @@ from domain import OthelloEnv
 from domain.models import *
 from agent.DqnAgent import DqnAgent, Memory, Experience, SegmentMemory
 from agent.RandomAgent import RandomAgent
+from agent.AlphaBetaAgent import AlphaBetaAgent
 from tqdm import tqdm
 import ray
 from ray.experimental import tqdm_ray
@@ -56,7 +57,7 @@ def train():
 
 
 def bench_mark(
-    target_agent: Agent, opp_agent: Agent = RandomAgent(), simulation_times=1
+    target_agent: Agent, opp_agent: Agent = AlphaBetaAgent(1), simulation_times=1
 ):
     target = 0
     opp = 0
