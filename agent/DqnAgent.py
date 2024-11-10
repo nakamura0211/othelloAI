@@ -200,6 +200,11 @@ class DqnAgent(Agent):
         model.add(relu)
         model.add(Flatten())
 
+        model.add(Dense(1024, kernel_initializer=kernel_initializer))
+        model.add(BatchNormalization())
+        model.add(relu)
+        model.add(Dropout(0.3))
+
         model.add(Dense(512, kernel_initializer=kernel_initializer))
         model.add(BatchNormalization())
         model.add(relu)
