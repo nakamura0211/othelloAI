@@ -1,5 +1,9 @@
 import math
-from typing import Self
+
+try:
+    from typing import Self
+except ImportError:
+    Self = str
 from copy import copy
 from domain.models import *
 import domain.OthelloEnv as OthelloEnv
