@@ -61,7 +61,7 @@ class DqnAgent(Agent):
         self.gamma = 1
         self.pb_epsilon = pb_epsilon
         self.pb_epsilon_min = 0.4
-        self.pb_epsilon_decay = 0.999
+        self.pb_epsilon_decay = 0.9995
         self.epsilon = epsilon
         self.epsilon_min = 0.01
         self.epsilon_decay = 0.999
@@ -292,11 +292,11 @@ class DqnAgent(Agent):
             [v if i in valid else -1 for i, v in enumerate(act_values[0])]
         )
         if np.random.rand() <= self.pb_epsilon:
-            print(f"{(filtered + 1) / 2}")
+            weights = (filtered + 1) / 2
+            if weights.sum() <= 0:
+                return random.choice(OthelloEnv.valid_actions(state))
             return Action(
-                random.choices(
-                    [i for i in range(SIZE * SIZE)], weights=(filtered + 1) / 2, k=1
-                )[0]
+                random.choices([i for i in range(SIZE * SIZE)], weights=weights, k=1)[0]
             )
         return Action(np.argmax(filtered))
 
