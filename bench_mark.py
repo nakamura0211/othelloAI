@@ -43,7 +43,7 @@ def bench_mark(target_agent: Agent, opp_agent: Agent, simulation_times: int):
 
 if __name__ == "__main__":
     target_agent = DqnAgent(0, 0)
-    target_agent.load("model/dqn1450 (2).keras")
+    target_agent.load("model/dqn1500.keras")
     opp_agent = RandomAgent()  # MctsAgent(1000, 1)
     simulation_times = 50
     bench_mark(target_agent, opp_agent, simulation_times)

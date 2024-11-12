@@ -64,7 +64,7 @@ class DqnAgent(Agent):
         self.pb_epsilon_decay = 0.9999
         self.epsilon = epsilon
         self.epsilon_min = 0.01
-        self.epsilon_decay = 0.9992
+        self.epsilon_decay = 0.9994
         self.learning_rate = 0.000005
         self.model = self._build_model()
         if weights is not None and len(weights) != 0:
@@ -161,7 +161,7 @@ class DqnAgent(Agent):
         model.add(Input(shape=(SIZE, SIZE, 2)))
         model.add(
             Conv2D(
-                512,
+                128,
                 3,
                 padding="same",
                 use_bias=False,
@@ -172,7 +172,7 @@ class DqnAgent(Agent):
         model.add(relu)
         model.add(
             Conv2D(
-                512,
+                256,
                 3,
                 padding="same",
                 use_bias=False,
@@ -213,7 +213,7 @@ class DqnAgent(Agent):
         model.add(Dense(512, kernel_initializer=kernel_initializer))
         model.add(BatchNormalization())
         model.add(relu)
-        model.add(Dropout(0.2))
+        model.add(Dropout(0.3))
 
         model.add(Dense(SIZE * SIZE, kernel_initializer=kernel_initializer))
         model.add(BatchNormalization())
@@ -418,7 +418,7 @@ class SegmentMemory:
     def sample(self, n) -> list[Experience]:
         allocate_rate = []
         rate = 1
-        for _ in range(self.memory_len):
+        for i in range(self.memory_len):
             allocate_rate.append(rate)
             rate *= self.rate_decay
         result = []
