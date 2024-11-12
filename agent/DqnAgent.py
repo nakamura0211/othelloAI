@@ -345,11 +345,10 @@ class IgnoreInvalidHuberLoss(tf.keras.losses.Loss):
     def call(self, y_true, y_pred):
         # y_pred が 0 でない要素のマスクを作成
         mask = tf.not_equal(y_true, DqnAgent.invalid_mask)
-
         # y_pred と y_true の 0 でないインデックスのみを取得
         y_pred_filtered = tf.boolean_mask(y_pred, mask)
         y_true_filtered = tf.boolean_mask(y_true, mask)
-        return huber(y_pred_filtered, y_true_filtered)
+        return huber(y_pred_filtered, y_true_filtered, 0.1)
 
 
 class Memory:
