@@ -55,6 +55,8 @@ class Experience:
 
 
 class DqnAgent(Agent):
+    invalid_mask = -2
+
     def __init__(
         self, epsilon: float = 1.0, pb_epsilon: float = 1.0, weights: list | None = None
     ):
@@ -221,7 +223,7 @@ class DqnAgent(Agent):
         model.compile(
             loss=CosineSimilarityLoss(),
             optimizer=Adam(learning_rate=self.learning_rate),
-            metrics=["cosine_similarity", "mean_absolute_error"],
+            # metrics=["cosine_similarity", "mean_absolute_error"],
         )
         return model
 
@@ -265,11 +267,11 @@ class DqnAgent(Agent):
 
             target_y = target_ys[i]
             target_y[exp.action.index] = target
-            invalid_mask = 0
+
             valid_actions = {a.index for a in OthelloEnv.valid_actions(exp.state)}
             for i in range(SIZE * SIZE):
                 if i not in valid_actions:
-                    target_y[i] = invalid_mask
+                    target_y[i] = DqnAgent.invalid_mask
 
             x.append(exp.state.to_image())
             y.append(target_y)
@@ -333,6 +335,21 @@ class CosineSimilarityLoss(keras.losses.Loss):
             y_true_normalized * y_pred_normalized, axis=-1
         )
         return 1.0 - cosine_similarity
+
+
+class IgnoreInvalidHuberLoss(tf.keras.losses.Loss):
+    def __init__(self, delta=1.0, **kwargs):
+        super().__init__(**kwargs)
+        self.delta = delta
+
+    def call(self, y_true, y_pred):
+        # y_pred が 0 でない要素のマスクを作成
+        mask = tf.not_equal(y_pred, DqnAgent.invalid_mask)
+
+        # y_pred と y_true の 0 でないインデックスのみを取得
+        y_pred_filtered = tf.boolean_mask(y_pred, mask)
+        y_true_filtered = tf.boolean_mask(y_true, mask)
+        return huber(y_pred_filtered, y_true_filtered)
 
 
 class Memory:
