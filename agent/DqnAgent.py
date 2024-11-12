@@ -163,7 +163,7 @@ class DqnAgent(Agent):
         model.add(Input(shape=(SIZE, SIZE, 2)))
         model.add(
             Conv2D(
-                128,
+                512,
                 3,
                 padding="same",
                 use_bias=False,
@@ -174,7 +174,7 @@ class DqnAgent(Agent):
         model.add(relu)
         model.add(
             Conv2D(
-                256,
+                512,
                 3,
                 padding="same",
                 use_bias=False,
@@ -221,7 +221,7 @@ class DqnAgent(Agent):
         model.add(BatchNormalization())
         model.add(Activation("tanh"))
         model.compile(
-            loss=CosineSimilarityLoss(),
+            loss=IgnoreInvalidHuberLoss(),
             optimizer=Adam(learning_rate=self.learning_rate),
             # metrics=["cosine_similarity", "mean_absolute_error"],
         )
@@ -349,6 +349,8 @@ class IgnoreInvalidHuberLoss(tf.keras.losses.Loss):
         # y_pred と y_true の 0 でないインデックスのみを取得
         y_pred_filtered = tf.boolean_mask(y_pred, mask)
         y_true_filtered = tf.boolean_mask(y_true, mask)
+        print(y_pred)
+        print(y_pred_filtered)
         return huber(y_pred_filtered, y_true_filtered)
 
 
