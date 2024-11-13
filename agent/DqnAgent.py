@@ -339,7 +339,7 @@ class TdHuberLoss(tf.keras.losses.Loss):
         # y_pred と y_true の 0 でないインデックスのみを取得
         y_pred_filtered = tf.boolean_mask(y_pred, mask)
         y_true_filtered = tf.boolean_mask(y_true, mask)
-        return huber(y_true_filtered, y_pred_filtered, delta=0.1)
+        return huber(y_true_filtered, y_pred_filtered, delta=0.1) * 10
 
 
 class Memory:
