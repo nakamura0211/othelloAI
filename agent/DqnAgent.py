@@ -221,23 +221,15 @@ class DqnAgent(Agent):
         model.add(BatchNormalization())
         model.add(Activation("tanh"))
         model.compile(
-            loss=IgnoreInvalidHuberLoss(),
+            loss=AbsLoss(),
             optimizer=Adam(learning_rate=self.learning_rate),
             # metrics=["cosine_similarity", "mean_absolute_error"],
         )
         return model
 
     @staticmethod
-    def dqn_loss(y_true, y_pred):
-        return tf.reduce_mean(tf.square(y_true - y_pred))
-
-    @staticmethod
     def tanh_crossentropy(y_true, y_pred):
         return categorical_crossentropy((y_true + 1) / 2, (y_pred + 1) / 2)
-
-    @staticmethod
-    def tanh_mse(y_true, y_pred):
-        return mean_squared_error(y_true * 10, y_pred * 10)
 
     def train(self, minibatch: list[Experience]):
         x = []
@@ -268,9 +260,9 @@ class DqnAgent(Agent):
             target_y = target_ys[i]
             target_y[exp.action.index] = target
 
-            valid_actions = {a.index for a in OthelloEnv.valid_actions(exp.state)}
+            # valid_actions = {a.index for a in OthelloEnv.valid_actions(exp.state)}
             for i in range(SIZE * SIZE):
-                if i not in valid_actions:
+                if i != exp.action.index:
                     target_y[i] = DqnAgent.invalid_mask
 
             x.append(exp.state.to_image())
@@ -337,10 +329,9 @@ class CosineSimilarityLoss(keras.losses.Loss):
         return 1.0 - cosine_similarity
 
 
-class IgnoreInvalidHuberLoss(tf.keras.losses.Loss):
-    def __init__(self, delta=1.0, **kwargs):
+class AbsLoss(tf.keras.losses.Loss):
+    def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.delta = delta
 
     def call(self, y_true, y_pred):
         # y_pred が 0 でない要素のマスクを作成
@@ -348,7 +339,7 @@ class IgnoreInvalidHuberLoss(tf.keras.losses.Loss):
         # y_pred と y_true の 0 でないインデックスのみを取得
         y_pred_filtered = tf.boolean_mask(y_pred, mask)
         y_true_filtered = tf.boolean_mask(y_true, mask)
-        return huber(y_pred_filtered, y_true_filtered, 0.1)
+        return mean_absolute_error(y_true_filtered, y_pred_filtered)
 
 
 class Memory:
