@@ -221,7 +221,7 @@ class DqnAgent(Agent):
         model.add(BatchNormalization())
         model.add(Activation("tanh"))
         model.compile(
-            loss=AbsLoss(),
+            loss=TdHuberLoss(),
             optimizer=Adam(learning_rate=self.learning_rate),
             # metrics=["cosine_similarity", "mean_absolute_error"],
         )
@@ -329,7 +329,7 @@ class CosineSimilarityLoss(keras.losses.Loss):
         return 1.0 - cosine_similarity
 
 
-class AbsLoss(tf.keras.losses.Loss):
+class TdHuberLoss(tf.keras.losses.Loss):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
@@ -339,7 +339,7 @@ class AbsLoss(tf.keras.losses.Loss):
         # y_pred と y_true の 0 でないインデックスのみを取得
         y_pred_filtered = tf.boolean_mask(y_pred, mask)
         y_true_filtered = tf.boolean_mask(y_true, mask)
-        return mean_absolute_error(y_true_filtered, y_pred_filtered)
+        return huber(y_true_filtered, y_pred_filtered, delta=0.1)
 
 
 class Memory:
