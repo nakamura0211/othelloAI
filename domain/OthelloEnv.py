@@ -37,18 +37,19 @@ valid actions were {[i.cord for i in valid_actions(state)]}
         )
     if is_done(next_state):
         _, black, white = count(state)
-        if black == white:
-            reward = 0
-        elif black > white:
-            reward = 0.5 + (black - white) / SIZE / SIZE * 0.5
-        else:
-            reward = 0.5 + (white - black) / SIZE / SIZE * 0.5
+        reward = (black - white) / SIZE / SIZE * 0.5
+        if black > white:
+            reward += 0.5
+        elif black < white:
+            reward -= 0.5
+        if state.color == Color.WHITE:
+            reward *= -1
         return next_state, reward, True
-    x = np.array(next_state.board)
-    maped = -1.5 * x * x + 2.5 * x
-    reward_for_black = (maped * reward_mask / reward_mask_sum).sum()
-    reward = reward_for_black if state.color == Color.BLACK else -reward_for_black
-    return next_state, reward, False
+    # x = np.array(next_state.board)
+    # maped = -1.5 * x * x + 2.5 * x
+    # reward_for_black = (maped * reward_mask / reward_mask_sum).sum()
+    # reward = reward_for_black if state.color == Color.BLACK else -reward_for_black
+    return next_state, 0, False
 
 
 reward_mask = np.array(
