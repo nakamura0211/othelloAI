@@ -40,11 +40,28 @@ valid actions were {[i.cord for i in valid_actions(state)]}
         if black == white:
             reward = 0
         elif black > white:
-            reward = 0.3 + (black - white) / SIZE / SIZE * 0.7
+            reward = 0.5 + (black - white) / SIZE / SIZE * 0.5
         else:
-            reward = 0.3 + (white - black) / SIZE / SIZE * 0.7
+            reward = 0.5 + (white - black) / SIZE / SIZE * 0.5
         return next_state, reward, True
-    return next_state, 0, False
+    x = np.array(next_state.board)
+    maped = -1.5 * x * x + 2.5 * x
+    reward_for_black = (maped * reward_mask / reward_mask_sum).sum()
+    reward = reward_for_black if state.color == Color.BLACK else -reward_for_black
+    return next_state, reward, False
+
+
+reward_mask = np.array(
+    [
+        [3, 1, 2, 2, 1, 3],
+        [1, 0, 0, 0, 0, 1],
+        [2, 0, 0, 0, 0, 2],
+        [2, 0, 0, 0, 0, 2],
+        [1, 0, 0, 0, 0, 1],
+        [3, 1, 1, 1, 1, 3],
+    ]
+)
+reward_mask_sum = reward_mask.sum()
 
 
 def put(state: State, action: Action) -> State | None:  # next_state

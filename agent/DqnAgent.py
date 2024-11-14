@@ -342,6 +342,32 @@ class TdHuberLoss(tf.keras.losses.Loss):
         return huber(y_true_filtered, y_pred_filtered, delta=0.1) * 10
 
 
+class TdMaeLoss(tf.keras.losses.Loss):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+    def call(self, y_true, y_pred):
+        # y_pred が 0 でない要素のマスクを作成
+        mask = tf.not_equal(y_true, DqnAgent.invalid_mask)
+        # y_pred と y_true の 0 でないインデックスのみを取得
+        y_pred_filtered = tf.boolean_mask(y_pred, mask)
+        y_true_filtered = tf.boolean_mask(y_true, mask)
+        return tf.abs(y_true_filtered - y_pred_filtered)
+
+
+class TdCrossEntropyLoss(tf.keras.losses.Loss):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+    def call(self, y_true, y_pred):
+        # y_pred が 0 でない要素のマスクを作成
+        mask = tf.not_equal(y_true, DqnAgent.invalid_mask)
+        # y_pred と y_true の 0 でないインデックスのみを取得
+        y_pred_filtered = tf.boolean_mask(y_pred, mask)
+        y_true_filtered = tf.boolean_mask(y_true, mask)
+        return tf.reduce_sum(y_true_filtered * tf.math.log(y_pred_filtered + 0.00001))
+
+
 class Memory:
     def __init__(self, maxlen: int = 200000):
         self.transition = deque[Experience](maxlen=maxlen)
