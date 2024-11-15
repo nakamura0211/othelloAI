@@ -81,6 +81,7 @@ class DqnAgent(Agent):
     def _build_dueling_model(self):
         kernel_initializer = HeNormal()
         inputs = Input(shape=(SIZE, SIZE, 2))
+        valid_mask = Input(shape=(SIZE * SIZE, 1))
         x = relu(
             BatchNormalization()(
                 Conv2D(
@@ -136,24 +137,35 @@ class DqnAgent(Agent):
         adv = Dropout(0.3)(relu(BatchNormalization()(Dense(1024)(x))))
         adv = Dropout(0.3)(relu(BatchNormalization()(Dense(512)(adv))))
         adv = Dense(SIZE * SIZE)(adv)
-        y = concatenate([v, adv])
+
+        def subtract_valid_mean(inputs):
+            adv, valid_mask = inputs
+            valid_adv = adv[:] * valid_mask[:, :, 0]
+            valid_mean = K.sum(valid_adv, axis=1, keepdims=True) / (
+                K.sum(valid_mask[:, :, 0], axis=1, keepdims=True) + K.epsilon()
+            )
+            return adv - valid_mean
+
+        adv_adjusted = Lambda(subtract_valid_mean, output_shape=(SIZE * SIZE,))(
+            [adv, valid_mask]
+        )
+        y = concatenate([v, adv_adjusted])
         outputs = Activation("tanh")(
-            # BatchNormalization()(
-            Lambda(
-                lambda a: K.expand_dims(a[:, 0], -1) + a[:, 1:],
-                output_shape=(SIZE * SIZE,),
-            )(y)
-            # )
+            BatchNormalization()(
+                Lambda(
+                    lambda a: K.expand_dims(a[:, 0], -1) + a[:, 1:],
+                    output_shape=(SIZE * SIZE,),
+                )(y)
+            )
         )
 
-        model = Model(inputs=inputs, outputs=outputs)
+        model = Model(inputs=[inputs, valid_mask], outputs=outputs)
 
         model.compile(
             loss=TdHuberLoss(),
             optimizer=Adam(learning_rate=self.learning_rate),
             # metrics=["cosine_similarity", "mean_absolute_error"],
         )
-
         return model
 
     def _build_model(self):
@@ -235,13 +247,23 @@ class DqnAgent(Agent):
         x = []
         y = []
         x_next = []
+        x_next_mask = []
         x_cur = []
+        x_cur_mask = []
         for exp in minibatch:
             x_next.append(exp.next_state.to_image())
+            x_next_mask.append(self._make_valid_mask(exp.next_state))
             x_cur.append(exp.state.to_image())
-        y_next = self.model.predict(np.array(x_next), verbose=0)
-        y_next_target = self.target.predict(np.array(x_next), verbose=0)
-        target_ys = self.model.predict(np.array(x_cur), verbose=0)
+            x_cur_mask.append(self._make_valid_mask(exp.state))
+        y_next = self.model.predict(
+            [np.array(x_next), np.array(x_next_mask)], verbose=0
+        )
+        y_next_target = self.target.predict(
+            [np.array(x_next), np.array(x_next_mask)], verbose=0
+        )
+        target_ys = self.model.predict(
+            [np.array(x_cur), np.array(x_cur_mask)], verbose=0
+        )
 
         for i, exp in enumerate(minibatch):
             if not exp.done:
@@ -271,7 +293,15 @@ class DqnAgent(Agent):
             self.epsilon *= self.epsilon_decay
         if self.pb_epsilon > self.pb_epsilon_min:
             self.pb_epsilon *= self.pb_epsilon_decay
-        self.model.fit(np.array(x), np.array(y), epochs=1, verbose=1)
+        self.model.fit(
+            [np.array(x), np.array(x_cur_mask)], np.array(y), epochs=1, verbose=1
+        )
+
+    def _make_valid_mask(self, state: State):
+        mask = np.zeros((SIZE * SIZE, 1))
+        for a in OthelloEnv.valid_actions(state):
+            mask[a.index, 0] = 1
+        return mask
 
     def fit(self, x, td_losses):
         pass
@@ -281,7 +311,8 @@ class DqnAgent(Agent):
             return random.choice(OthelloEnv.valid_actions(state))
         valid = {action.index for action in OthelloEnv.valid_actions(state)}
         act_values = self.model.predict(
-            state.to_image().reshape(1, SIZE, SIZE, 2), verbose=0
+            [state.to_image().reshape(1, SIZE, SIZE, 2), self._make_valid_mask(state)],
+            verbose=0,
         )
         filtered = np.array(
             [v if i in valid else -1 for i, v in enumerate(act_values[0])]
