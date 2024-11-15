@@ -315,7 +315,10 @@ class DqnAgent(Agent):
             return random.choice(OthelloEnv.valid_actions(state))
         valid = {action.index for action in OthelloEnv.valid_actions(state)}
         act_values = self.model.predict(
-            [state.to_image().reshape(1, SIZE, SIZE, 2), self._make_valid_mask(state)],
+            [
+                state.to_image().reshape(1, SIZE, SIZE, 2),
+                self._make_valid_mask(state).reshape(1, SIZE * SIZE, 1),
+            ],
             verbose=0,
         )
         filtered = np.array(
