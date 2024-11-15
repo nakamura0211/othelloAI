@@ -138,12 +138,12 @@ class DqnAgent(Agent):
         adv = Dense(SIZE * SIZE)(adv)
         y = concatenate([v, adv])
         outputs = Activation("tanh")(
-            BatchNormalization()(
-                Lambda(
-                    lambda a: K.expand_dims(a[:, 0], -1) + a[:, 1:],
-                    output_shape=(SIZE * SIZE,),
-                )(y)
-            )
+            # BatchNormalization()(
+            Lambda(
+                lambda a: K.expand_dims(a[:, 0], -1) + a[:, 1:],
+                output_shape=(SIZE * SIZE,),
+            )(y)
+            # )
         )
 
         model = Model(inputs=inputs, outputs=outputs)
