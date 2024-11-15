@@ -88,7 +88,7 @@ class McAgent(Agent):
         chosen = [1] * chirdren_num
         uct_list = [0] * chirdren_num
         for i in (
-            tqdm(range(self.playout_num))
+            tqdm.tqdm(range(self.playout_num))
             if self.verbose > 0
             else range(self.playout_num)
         ):

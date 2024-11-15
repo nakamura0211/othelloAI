@@ -26,6 +26,7 @@ from keras.src.losses import (
     huber,
     Huber,
 )
+from keras.src.activations import relu
 from keras.src.initializers import HeNormal
 from keras.src.optimizers import Adam, SGD
 from keras.src.callbacks import TensorBoard
@@ -68,10 +69,10 @@ class DqnAgent(Agent):
         self.epsilon_min = 0.01
         self.epsilon_decay = 0.9994
         self.learning_rate = 0.000005
-        self.model = self._build_model()
+        self.model = self._build_dueling_model()
         if weights is not None and len(weights) != 0:
             self.model.set_weights(weights)
-        self.target = self._build_model()
+        self.target = self._build_dueling_model()
         self.sync_network()
 
     def sync_network(self):
@@ -79,7 +80,6 @@ class DqnAgent(Agent):
 
     def _build_dueling_model(self):
         kernel_initializer = HeNormal()
-        relu = Activation("relu")
         inputs = Input(shape=(SIZE, SIZE, 2))
         x = relu(
             BatchNormalization()(
@@ -129,12 +129,12 @@ class DqnAgent(Agent):
 
         x = Flatten()(x)
 
-        v = relu(BatchNormalization()(Dense(512)(x)))
-        v = Dropout(0.3)(relu(BatchNormalization()(Dense(256)(v))))
+        v = Dropout(0.3)(relu(BatchNormalization()(Dense(1024)(x))))
+        v = Dropout(0.3)(relu(BatchNormalization()(Dense(512)(v))))
         v = Dense(1)(v)
 
-        adv = relu(BatchNormalization()(Dense(512)(x)))
-        adv = Dropout(0.3)(relu(BatchNormalization()(Dense(256)(adv))))
+        adv = Dropout(0.3)(relu(BatchNormalization()(Dense(1024)(x))))
+        adv = Dropout(0.3)(relu(BatchNormalization()(Dense(512)(adv))))
         adv = Dense(SIZE * SIZE)(adv)
         y = concatenate([v, adv])
         outputs = Activation("tanh")(
@@ -149,9 +149,9 @@ class DqnAgent(Agent):
         model = Model(inputs=inputs, outputs=outputs)
 
         model.compile(
-            loss=CosineSimilarityLoss(),
+            loss=TdHuberLoss(),
             optimizer=Adam(learning_rate=self.learning_rate),
-            metrics=["cosine_similarity", "mean_absolute_error"],
+            # metrics=["cosine_similarity", "mean_absolute_error"],
         )
 
         return model
@@ -273,6 +273,9 @@ class DqnAgent(Agent):
             self.pb_epsilon *= self.pb_epsilon_decay
         self.model.fit(np.array(x), np.array(y), epochs=1, verbose=1)
 
+    def fit(self, x, td_losses):
+        pass
+
     def act(self, state: State) -> Action:
         if np.random.rand() <= self.epsilon:
             return random.choice(OthelloEnv.valid_actions(state))
@@ -309,11 +312,12 @@ class DqnAgent(Agent):
         return np.amax([v if i in valid else -2 for i, v in enumerate(policy)])
 
     def load(self, name):
-
         self.model.load_weights(name)
+        return self
 
     def save(self, name):
         self.model.save_weights(name)
+        return self
 
 
 class CosineSimilarityLoss(keras.losses.Loss):
@@ -463,3 +467,67 @@ class SegmentMemory:
             else:
                 result.extend(random.choices(self.memories[i], k=ln))
         return result
+
+
+class DqnNetwork(Model):
+    """See https://github.com/suragnair/alpha-zero-general/"""
+
+    def __init__(self, action_space, filters=512, use_bias=False):
+
+        super(DqnNetwork, self).__init__()
+
+        self.action_space = action_space
+        self.filters = filters
+
+        self.conv1 = Conv2D(filters, 3, padding="same", use_bias=use_bias)
+        self.bn1 = BatchNormalization()
+
+        self.conv2 = Conv2D(filters, 3, padding="same", use_bias=use_bias)
+        self.bn2 = BatchNormalization()
+
+        self.conv3 = Conv2D(filters, 3, padding="valid", use_bias=use_bias)
+        self.bn3 = BatchNormalization()
+
+        self.conv4 = Conv2D(filters, 3, padding="valid", use_bias=use_bias)
+        self.bn4 = BatchNormalization()
+
+        self.flat = Flatten()
+
+        self.dense5 = Dense(1024, use_bias=use_bias)
+        self.bn5 = BatchNormalization()
+        self.drop5 = Dropout(0.3)
+
+        self.dense6 = Dense(512, use_bias=use_bias)
+        self.bn6 = BatchNormalization()
+        self.drop6 = Dropout(0.3)
+
+        self.q = Dense(self.action_space, activation="tanh")
+
+        self.value = Dense(1, activation="tanh")
+
+    def call(self, x, training=False):
+        x = relu(self.bn1(self.conv1(x), training=training))
+        x = relu(self.bn2(self.conv2(x), training=training))
+        x = relu(self.bn3(self.conv3(x), training=training))
+        x = relu(self.bn4(self.conv4(x), training=training))
+
+        x = self.flat(x)
+
+        x = relu(self.bn5(self.dense5(x), training=training))
+        x = self.drop5(x, training=training)
+
+        x = relu(self.bn6(self.dense6(x), training=training))
+        x = self.drop6(x, training=training)
+
+        q = self.q(x)
+        v = self.value(x)
+
+        return q, v
+
+    def predict(self, state):
+        if len(state.shape) == 3:
+            state = state[np.newaxis, ...]
+
+        q, value = self(state)
+
+        return q, value
