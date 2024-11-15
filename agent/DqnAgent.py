@@ -140,9 +140,13 @@ class DqnAgent(Agent):
 
         def subtract_valid_mean(inputs):
             adv, valid_mask = inputs
-            valid_adv = adv[:] * valid_mask[:, :, 0]
-            valid_mean = K.sum(valid_adv, axis=1, keepdims=True) / (
-                K.sum(valid_mask[:, :, 0], axis=1, keepdims=True) + K.epsilon()
+            valid_adv = adv * valid_mask[:, :, 0]
+
+            valid_adv_stop = K.stop_gradient(valid_adv)
+            valid_mask_stop = K.stop_gradient(valid_mask[:, :, 0])
+
+            valid_mean = K.sum(valid_adv_stop, axis=1, keepdims=True) / (
+                K.sum(valid_mask_stop, axis=1, keepdims=True) + K.epsilon()
             )
             return adv - valid_mean
 
