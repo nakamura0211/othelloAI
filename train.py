@@ -1,6 +1,6 @@
 from domain import OthelloEnv
 from domain.models import *
-from agent.DqnAgent import DqnAgent, Memory, Experience, SegmentMemory
+from agent.DqnAgent import DqnAgent, Memory, Experience, SegmentMemory, SimpleMemory
 from agent.AlphaBetaAgent import AlphaBetaAgent
 from tqdm import tqdm
 import ray
@@ -15,8 +15,8 @@ import gc
 def train():
     num_cpus = 7
     ray.init(num_cpus=num_cpus)
-    global_memory = SegmentMemory(80000, 4)  # Memory(50000)
-    agent = DqnAgent()
+    global_memory = SimpleMemory(80000)  # SegmentMemory(80000, 4)  # Memory(50000)
+    agent = DqnAgent(dueling=False, double=False)
     n_episodes = 10000
     each_episodes = 50
     batch_size = 1024
@@ -88,7 +88,13 @@ def bench_mark(
 
 @ray.remote(num_cpus=1)
 def self_play(epsilon: float, pb_epsilon: float, weights: list, play_num):
-    agent = DqnAgent(epsilon=epsilon, pb_epsilon=pb_epsilon, weights=weights)
+    agent = DqnAgent(
+        epsilon=epsilon,
+        pb_epsilon=pb_epsilon,
+        weights=weights,
+        dueling=False,
+        double=False,
+    )
     memory: list[Experience] = []
     for i in range(play_num):
         state = OthelloEnv.reset()

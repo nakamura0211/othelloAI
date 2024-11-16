@@ -59,7 +59,12 @@ class DqnAgent(Agent):
     invalid_mask = -2
 
     def __init__(
-        self, epsilon: float = 1.0, pb_epsilon: float = 1.0, weights: list | None = None
+        self,
+        epsilon: float = 1.0,
+        pb_epsilon: float = 1.0,
+        weights: list | None = None,
+        dueling: bool = True,
+        double: bool = True,
     ):
         self.gamma = 1
         self.pb_epsilon = pb_epsilon
@@ -69,14 +74,20 @@ class DqnAgent(Agent):
         self.epsilon_min = 0.01
         self.epsilon_decay = 0.9994
         self.learning_rate = 0.000005
-        self.model = self._build_dueling_model()
+        self.dueling = dueling
+        self.model = self._build_dueling_model() if dueling else self._build_model()
         if weights is not None and len(weights) != 0:
             self.model.set_weights(weights)
-        self.target = self._build_dueling_model()
+        if double:
+            self.target = (
+                self._build_dueling_model() if dueling else self._build_model()
+            )
+        self.double = double
         self.sync_network()
 
     def sync_network(self):
-        self.target.set_weights(self.model.weights)
+        if self.double:
+            self.target.set_weights(self.model.weights)
 
     def _build_dueling_model(self):
         kernel_initializer = HeNormal()
@@ -247,35 +258,62 @@ class DqnAgent(Agent):
     def tanh_crossentropy(y_true, y_pred):
         return categorical_crossentropy((y_true + 1) / 2, (y_pred + 1) / 2)
 
+    def q_values_list(self, states: list[State]) -> np.ndarray:
+        images = []
+        valid_acts = []
+        for s in states:
+            images.append(s.to_image())
+            valid_acts.append(self._make_valid_mask(s))
+        if self.dueling:
+            return self.model.predict(
+                [
+                    np.array(images),
+                    np.array(valid_acts),
+                ],
+                verbose=0,
+            )
+        else:
+            return self.model.predict(np.array(images), verbose=0)
+
+    def q_target_values_list(self, states: list[State]) -> np.ndarray:
+        images = []
+        valid_acts = []
+        for s in states:
+            images.append(s.to_image())
+            valid_acts.append(self._make_valid_mask(s))
+        if self.dueling:
+            return self.target.predict(
+                [np.array(images), np.array(valid_acts)], verbose=0
+            )
+        else:
+            return self.target.predict(np.array(images), verbose=0)
+
     def train(self, minibatch: list[Experience]):
         x = []
         y = []
-        x_next = []
-        x_next_mask = []
-        x_cur = []
+        states = []
+        next_states = []
         x_cur_mask = []
         for exp in minibatch:
-            x_next.append(exp.next_state.to_image())
-            x_next_mask.append(self._make_valid_mask(exp.next_state))
-            x_cur.append(exp.state.to_image())
-            x_cur_mask.append(self._make_valid_mask(exp.state))
-        y_next = self.model.predict(
-            [np.array(x_next), np.array(x_next_mask)], verbose=0
-        )
-        y_next_target = self.target.predict(
-            [np.array(x_next), np.array(x_next_mask)], verbose=0
-        )
-        target_ys = self.model.predict(
-            [np.array(x_cur), np.array(x_cur_mask)], verbose=0
-        )
+            states.append(exp.state)
+            next_states.append(exp.next_state)
+        y_next = self.q_values_list(next_states)
+        if self.double:
+            y_next_target = self.q_target_values_list(next_states)
+        target_ys = self.q_values_list(states)
 
         for i, exp in enumerate(minibatch):
             if not exp.done:
                 nx_valid = {a.index for a in OthelloEnv.valid_actions(exp.next_state)}
-                best_nx_act = np.argmax(
-                    [v if i in nx_valid else -2 for i, v in enumerate(y_next[i])]
-                )
-                nx_act_value = y_next_target[i][best_nx_act]
+                if self.double:
+                    best_nx_act = np.argmax(
+                        [v if i in nx_valid else -2 for i, v in enumerate(y_next[i])]
+                    )
+                    nx_act_value = y_next_target[i][best_nx_act]
+                else:
+                    nx_act_value = np.amax(
+                        [v if i in nx_valid else -2 for i, v in enumerate(y_next[i])]
+                    )
                 if exp.state.color == exp.next_state.color:
                     target = exp.reward + self.gamma * nx_act_value
                 else:
@@ -297,9 +335,12 @@ class DqnAgent(Agent):
             self.epsilon *= self.epsilon_decay
         if self.pb_epsilon > self.pb_epsilon_min:
             self.pb_epsilon *= self.pb_epsilon_decay
-        self.model.fit(
-            [np.array(x), np.array(x_cur_mask)], np.array(y), epochs=1, verbose=1
-        )
+        if self.dueling:
+            self.model.fit(
+                [np.array(x), np.array(x_cur_mask)], np.array(y), epochs=1, verbose=1
+            )
+        else:
+            self.model.fit(np.array(x), np.array(y), epochs=1, verbose=1)
 
     def _make_valid_mask(self, state: State):
         mask = np.zeros((SIZE * SIZE, 1))
@@ -307,23 +348,12 @@ class DqnAgent(Agent):
             mask[a.index, 0] = 1
         return mask
 
-    def fit(self, x, td_losses):
-        pass
-
     def act(self, state: State) -> Action:
         if np.random.rand() <= self.epsilon:
             return random.choice(OthelloEnv.valid_actions(state))
         valid = {action.index for action in OthelloEnv.valid_actions(state)}
-        act_values = self.model.predict(
-            [
-                state.to_image().reshape(1, SIZE, SIZE, 2),
-                self._make_valid_mask(state).reshape(1, SIZE * SIZE, 1),
-            ],
-            verbose=0,
-        )
-        filtered = np.array(
-            [v if i in valid else -1 for i, v in enumerate(act_values[0])]
-        )
+        q_values = self.q_values(state)
+        filtered = np.array([v if i in valid else -1 for i, v in enumerate(q_values)])
         if np.random.rand() <= self.pb_epsilon:
             weights = (filtered + 1) / 2
             if weights.sum() <= 0:
@@ -336,16 +366,14 @@ class DqnAgent(Agent):
         else:
             return random.choice(OthelloEnv.valid_actions(state))
 
-    def policy(self, state: State) -> list[float]:
-        return self.model.predict(state.to_image().reshape((1, SIZE, SIZE, 2)))[0]
+    def q_values(self, state: State) -> list[float]:
+        return self.q_values_list([state])[0]
 
     def Q(self, state: State, action: Action):
-        return self.policy(state)[action.index]
+        return self.q_values(state)[action.index]
 
     def V(self, state: State) -> float:
-        policy = self.model.predict(
-            state.to_image().reshape((1, SIZE, SIZE, 2)), verbose=0
-        )[0]
+        policy = self.q_values(state)
         valid = {action.index for action in OthelloEnv.valid_actions(state)}
         return np.amax([v if i in valid else -2 for i, v in enumerate(policy)])
 
@@ -408,6 +436,20 @@ class TdCrossEntropyLoss(tf.keras.losses.Loss):
         y_pred_filtered = tf.boolean_mask(y_pred, mask)
         y_true_filtered = tf.boolean_mask(y_true, mask)
         return tf.reduce_sum(y_true_filtered * tf.math.log(y_pred_filtered + 0.00001))
+
+
+class SimpleMemory:
+    def __init__(self, maxlen: int) -> None:
+        self.memory = deque(maxlen=maxlen)
+
+    def length(self):
+        return len(self.memory)
+
+    def add(self, transiton_batch: list[Experience]):
+        self.memory.extend(transiton_batch)
+
+    def sample(self, n):
+        return random.choices(self.memory, k=n)
 
 
 class Memory:
