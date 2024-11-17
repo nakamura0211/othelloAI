@@ -22,17 +22,15 @@ import gc
 
 double = False
 dueling = False
-multistep = True
+multistep = False
 multistep_length = 2
 
 
 def train():
     num_cpus = 7
     ray.init(num_cpus=num_cpus)
-    global_memory = SimpleMultiStepMemory(
-        80000
-    )  # SimpleMemory(80000)  # SegmentMemory(80000, 4)  # Memory(50000)
-    agent = DqnAgent(dueling=dueling, double=double)
+    global_memory = SegmentMemory(80000, 4)  # Memory(50000)
+    agent = DqnAgent(dueling=dueling, double=double, multistep=multistep)
     n_episodes = 10000
     each_episodes = 50
     batch_size = 1024
@@ -110,6 +108,7 @@ def self_play(epsilon: float, pb_epsilon: float, weights: list, play_num):
         weights=weights,
         dueling=dueling,
         double=double,
+        multistep=multistep,
     )
     memory: list[Experience] = []
     for i in range(play_num):
@@ -135,6 +134,7 @@ def self_play_multistep(epsilon: float, pb_epsilon: float, weights: list, play_n
         weights=weights,
         dueling=dueling,
         double=double,
+        multistep=multistep,
     )
     memory: list[Experiences] = []
     for i in range(play_num):
