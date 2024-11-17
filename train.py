@@ -1,6 +1,14 @@
 from domain import OthelloEnv
 from domain.models import *
-from agent.DqnAgent import DqnAgent, Memory, Experience, SegmentMemory, SimpleMemory
+from agent.DqnAgent import (
+    DqnAgent,
+    Memory,
+    Experience,
+    SegmentMemory,
+    SimpleMemory,
+    Experiences,
+    SimpleMultiStepMemory,
+)
 from agent.AlphaBetaAgent import AlphaBetaAgent
 from tqdm import tqdm
 import ray
@@ -12,18 +20,26 @@ import sys
 import gc
 
 
+double = False
+dueling = False
+multistep = True
+multistep_length = 2
+
+
 def train():
     num_cpus = 7
     ray.init(num_cpus=num_cpus)
-    global_memory = SimpleMemory(80000)  # SegmentMemory(80000, 4)  # Memory(50000)
-    agent = DqnAgent(dueling=False, double=False)
+    global_memory = SimpleMultiStepMemory(
+        80000
+    )  # SimpleMemory(80000)  # SegmentMemory(80000, 4)  # Memory(50000)
+    agent = DqnAgent(dueling=dueling, double=double)
     n_episodes = 10000
     each_episodes = 50
     batch_size = 1024
     n_parallel_selfplay = num_cpus
     current_weights = agent.model.get_weights()
     work_in_progresses = [
-        self_play.remote(
+        (self_play_multistep if multistep else self_play).remote(
             agent.epsilon, agent.pb_epsilon, current_weights, each_episodes
         )
         for _ in range(n_parallel_selfplay)
@@ -35,7 +51,7 @@ def train():
         # 120*each_episodes ぐらい追加される
         work_in_progresses.extend(
             [
-                self_play.remote(
+                (self_play_multistep if multistep else self_play).remote(
                     agent.epsilon, agent.pb_epsilon, current_weights, each_episodes
                 )
             ]
@@ -92,8 +108,8 @@ def self_play(epsilon: float, pb_epsilon: float, weights: list, play_num):
         epsilon=epsilon,
         pb_epsilon=pb_epsilon,
         weights=weights,
-        dueling=False,
-        double=False,
+        dueling=dueling,
+        double=double,
     )
     memory: list[Experience] = []
     for i in range(play_num):
@@ -105,6 +121,60 @@ def self_play(epsilon: float, pb_epsilon: float, weights: list, play_num):
             for s, a, s2 in zip(state.turn(), action.turn(), next_state.turn()):
                 memory.append(Experience(s, a, reward, s2, done))
             state = next_state
+            if done:
+                break
+
+    return memory
+
+
+@ray.remote(num_cpus=1)
+def self_play_multistep(epsilon: float, pb_epsilon: float, weights: list, play_num):
+    agent = DqnAgent(
+        epsilon=epsilon,
+        pb_epsilon=pb_epsilon,
+        weights=weights,
+        dueling=dueling,
+        double=double,
+    )
+    memory: list[Experiences] = []
+    for i in range(play_num):
+        state = OthelloEnv.reset()
+        end = False
+        while True:
+            rewards = []
+            states = [state]
+            actions = []
+            for j in range(multistep_length):
+                action = agent.act(state)
+                state, reward, done = OthelloEnv.step(state, action)
+                if done and j != multistep_length - 1:
+                    end = True
+                    break
+                states.append(state)
+                rewards.append(reward)
+                actions.append(action)
+            if end:
+                break
+            done = OthelloEnv.is_done(state)
+            memory.append(Experiences(multistep_length, states, actions, rewards, done))
+            turned_states = ([], [], [])
+            for state in states:
+                for i, s in enumerate(state.turn()):
+                    turned_states[i].append(s)
+            turned_actions = ([], [], [])
+            for action in actions:
+                for i, a in enumerate(action.turn()):
+                    turned_actions[i].append(a)
+            for j in range(3):
+                memory.append(
+                    Experiences(
+                        multistep_length,
+                        turned_states[i],
+                        turned_actions[i],
+                        rewards,
+                        done,
+                    )
+                )
             if done:
                 break
 

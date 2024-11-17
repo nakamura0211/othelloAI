@@ -55,6 +55,15 @@ class Experience:
     done: bool
 
 
+@dataclass
+class Experiences:
+    length: int
+    states: list[State]  # length+1
+    actions: list[Action]  # length
+    rewards: list[int]  # length
+    done: bool
+
+
 class DqnAgent(Agent):
     invalid_mask = -2
 
@@ -65,6 +74,7 @@ class DqnAgent(Agent):
         weights: list | None = None,
         dueling: bool = True,
         double: bool = True,
+        multistep: bool = True,
     ):
         self.gamma = 1
         self.pb_epsilon = pb_epsilon
@@ -75,6 +85,7 @@ class DqnAgent(Agent):
         self.epsilon_decay = 0.9994
         self.learning_rate = 0.000005
         self.dueling = dueling
+        self.multistep = multistep
         self.model = self._build_dueling_model() if dueling else self._build_model()
         if weights is not None and len(weights) != 0:
             self.model.set_weights(weights)
@@ -288,7 +299,36 @@ class DqnAgent(Agent):
         else:
             return self.target.predict(np.array(images), verbose=0)
 
-    def train(self, minibatch: list[Experience]):
+    def create_train_data_multistep(self, minibatch: list[Experiences]):
+        xs = []
+        ys = []
+        x_mask = []
+        if self.double:
+            pass
+        else:
+            states = [[] for _ in range(minibatch[0].length + 1)]
+            for exps in minibatch:
+                for i, s in enumerate(exps.states):
+                    states[i].append(s)
+            q_values = []
+            for ss in states:
+                q_values.append(self.q_values_list(ss))
+            for i, exps in enumerate(minibatch):
+                s_origin = exps.states[0]  # s_t
+                xs.append(s_origin.to_image())
+                x_mask.append(self._make_valid_mask(s_origin))
+                y = q_values[0][i]
+                target_y_value = 0
+                for t, (r, s) in enumerate(zip(exps.rewards, exps.states[1:])):
+                    if s_origin.color == s.color:
+                        target_y_value += r + np.amax(q_values[t][i])
+                    else:
+                        target_y_value += r - np.amax(q_values[t][i])
+                y[exps.actions[0].index] = target_y_value
+                ys.append(y)
+        return xs, ys, x_mask
+
+    def create_train_data(self, minibatch: list[Experience]):
         x = []
         y = []
         states = []
@@ -331,13 +371,20 @@ class DqnAgent(Agent):
 
             x.append(exp.state.to_image())
             y.append(target_y)
+        return x, y, x_cur_mask
+
+    def train(self, minibatch: list[Experience]):
+        if self.multistep:
+            x, y, x_mask = self.create_train_data_multistep(minibatch)
+        else:
+            x, y, x_mask = self.create_train_data(minibatch)
         if self.epsilon > self.epsilon_min:
             self.epsilon *= self.epsilon_decay
         if self.pb_epsilon > self.pb_epsilon_min:
             self.pb_epsilon *= self.pb_epsilon_decay
         if self.dueling:
             self.model.fit(
-                [np.array(x), np.array(x_cur_mask)], np.array(y), epochs=1, verbose=1
+                [np.array(x), np.array(x_mask)], np.array(y), epochs=1, verbose=1
             )
         else:
             self.model.fit(np.array(x), np.array(y), epochs=1, verbose=1)
@@ -449,6 +496,20 @@ class SimpleMemory:
         self.memory.extend(transiton_batch)
 
     def sample(self, n):
+        return random.choices(self.memory, k=n)
+
+
+class SimpleMultiStepMemory:
+    def __init__(self, maxlen: int) -> None:
+        self.memory = deque[Experiences](maxlen=maxlen)
+
+    def length(self):
+        return len(self.memory)
+
+    def add(self, transiton_batch: list[Experiences]):
+        self.memory.extend(transiton_batch)
+
+    def sample(self, n) -> list[Experiences]:
         return random.choices(self.memory, k=n)
 
 
