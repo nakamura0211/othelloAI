@@ -317,13 +317,24 @@ class DqnAgent(Agent):
                 s_origin = exps.states[0]  # s_t
                 xs.append(s_origin.to_image())
                 x_mask.append(self._make_valid_mask(s_origin))
+                valid_acts = OthelloEnv.valid_actions(s_origin)
                 y = q_values[0][i]
                 target_y_value = 0
                 for t, (r, s) in enumerate(zip(exps.rewards, exps.states[1:])):
                     if s_origin.color == s.color:
-                        target_y_value += r + np.amax(q_values[t][i])
+                        target_y_value += r + np.amax(
+                            [
+                                v if i in valid_acts else -2
+                                for i, v in enumerate(q_values[t][i])
+                            ]
+                        )
                     else:
-                        target_y_value += r - np.amax(q_values[t][i])
+                        target_y_value += r - np.amax(
+                            [
+                                v if i in valid_acts else -2
+                                for i, v in enumerate(q_values[t][i])
+                            ]
+                        )
                 y[exps.actions[0].index] = target_y_value
                 ys.append(y)
         return xs, ys, x_mask
