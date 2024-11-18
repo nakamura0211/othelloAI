@@ -102,8 +102,8 @@ class DqnAgent(Agent):
 
     def _build_dueling_model(self):
         kernel_initializer = HeNormal()
-        inputs = Input(shape=(SIZE, SIZE, 2))
-        valid_mask = Input(shape=(SIZE * SIZE, 1))
+        inputs = Input(shape=(SIZE, SIZE, 2), name="board_image")
+        valid_mask = Input(shape=(SIZE * SIZE, 1), name="valid_mask")
         x = relu(
             BatchNormalization()(
                 Conv2D(
@@ -344,10 +344,11 @@ class DqnAgent(Agent):
         y = []
         states = []
         next_states = []
-        x_cur_mask = []
+        x_mask = []
         for exp in minibatch:
             states.append(exp.state)
             next_states.append(exp.next_state)
+            x_mask.append(self._make_valid_mask(exp.state))
         y_next = self.q_values_list(next_states)
         if self.double:
             y_next_target = self.q_target_values_list(next_states)
@@ -382,7 +383,7 @@ class DqnAgent(Agent):
 
             x.append(exp.state.to_image())
             y.append(target_y)
-        return x, y, x_cur_mask
+        return x, y, x_mask
 
     def train(self, minibatch: list[Experience]):
         if self.multistep:

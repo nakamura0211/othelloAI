@@ -21,7 +21,7 @@ import gc
 
 
 double = False
-dueling = False
+dueling = True
 multistep = False
 multistep_length = 2
 
@@ -29,7 +29,7 @@ multistep_length = 2
 def train():
     num_cpus = 7
     ray.init(num_cpus=num_cpus)
-    global_memory = SegmentMemory(80000, 4)  # Memory(50000)
+    global_memory = SimpleMemory(80000)  # SegmentMemory(80000, 4)  # Memory(50000)
     agent = DqnAgent(dueling=dueling, double=double, multistep=multistep)
     n_episodes = 10000
     each_episodes = 50
