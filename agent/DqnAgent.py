@@ -1,4 +1,5 @@
 import random
+from math import ceil
 
 import numpy as np
 from collections import deque
@@ -385,21 +386,26 @@ class DqnAgent(Agent):
             y.append(target_y)
         return x, y, x_mask
 
-    def train(self, minibatch: list[Experience]):
-        if self.multistep:
-            x, y, x_mask = self.create_train_data_multistep(minibatch)
-        else:
-            x, y, x_mask = self.create_train_data(minibatch)
+    def train(self, experiences: list[Experience], batch_size: int = 128):
+        for i in range(ceil(len(experiences) / batch_size)):
+            mini_batch = experiences[
+                i * batch_size : min((i + 1) * batch_size, len(experiences))
+            ]
+            if self.multistep:
+                x, y, x_mask = self.create_train_data_multistep(mini_batch)
+            else:
+                x, y, x_mask = self.create_train_data(mini_batch)
+            if self.dueling:
+                self.model.fit(
+                    [np.array(x), np.array(x_mask)], np.array(y), epochs=1, verbose=1
+                )
+            else:
+                self.model.fit(np.array(x), np.array(y), epochs=1, verbose=1)
+
         if self.epsilon > self.epsilon_min:
             self.epsilon *= self.epsilon_decay
         if self.pb_epsilon > self.pb_epsilon_min:
             self.pb_epsilon *= self.pb_epsilon_decay
-        if self.dueling:
-            self.model.fit(
-                [np.array(x), np.array(x_mask)], np.array(y), epochs=1, verbose=1
-            )
-        else:
-            self.model.fit(np.array(x), np.array(y), epochs=1, verbose=1)
 
     def _make_valid_mask(self, state: State):
         mask = np.zeros((SIZE * SIZE, 1))
