@@ -20,7 +20,7 @@ import sys
 import gc
 
 
-double = False
+double = True
 dueling = False
 multistep = False
 multistep_length = 2
