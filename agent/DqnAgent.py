@@ -321,21 +321,24 @@ class DqnAgent(Agent):
                 valid_acts = OthelloEnv.valid_actions(s_origin)
                 y = q_values[0][i]
                 target_y_value = 0
-                for t, (r, s) in enumerate(zip(exps.rewards, exps.states[1:])):
+                for t, (r, s, a) in enumerate(
+                    zip(exps.rewards, exps.states[1:], exps.actions[1:] + [None])
+                ):
+                    print(a)
+                    act_value = (
+                        q_values[t + 1][i][a.index]
+                        if a is not None
+                        else np.amax(
+                            [
+                                v if i in valid_acts else -2
+                                for i, v in enumerate(q_values[t][i])
+                            ]
+                        )
+                    )
                     if s_origin.color == s.color:
-                        target_y_value += r + np.amax(
-                            [
-                                v if i in valid_acts else -2
-                                for i, v in enumerate(q_values[t][i])
-                            ]
-                        )
+                        target_y_value += r + act_value
                     else:
-                        target_y_value += r - np.amax(
-                            [
-                                v if i in valid_acts else -2
-                                for i, v in enumerate(q_values[t][i])
-                            ]
-                        )
+                        target_y_value += r - act_value
                 y[exps.actions[0].index] = target_y_value
                 ys.append(y)
         return xs, ys, x_mask
