@@ -307,11 +307,13 @@ class DqnAgent(Agent):
         if self.double:
             pass
         else:
-            states = [[] for _ in range(minibatch[0].length + 1)]
+            states = [
+                [] for _ in range(minibatch[0].length + 1)
+            ]  # states[t][i] 経験iの時刻tの状態
             for exps in minibatch:
-                for i, s in enumerate(exps.states):
-                    states[i].append(s)
-            q_values = []
+                for t, s in enumerate(exps.states):
+                    states[t].append(s)
+            q_values = []  # q_values[t][i]経験iの時刻tのq values
             for ss in states:
                 q_values.append(self.q_values_list(ss))
             for i, exps in enumerate(minibatch):
@@ -325,7 +327,7 @@ class DqnAgent(Agent):
                     zip(exps.rewards, exps.states[1:], exps.actions[1:] + [None])
                 ):
                     act_value = (
-                        q_values[t + 1][i][a.index]
+                        0
                         if a is not None
                         else np.amax(
                             [
