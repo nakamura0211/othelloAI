@@ -337,7 +337,7 @@ class DqnAgent(Agent):
                     if s_origin.color == s.color:
                         target_y_value += r + act_value
                     else:
-                        target_y_value += r - act_value
+                        target_y_value -= r + act_value
                 y[exps.actions[0].index] = target_y_value
                 ys.append(y)
         return xs, ys, x_mask
