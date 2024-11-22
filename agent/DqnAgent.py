@@ -592,7 +592,7 @@ class SegmentMemory:
         self.memories = [deque(maxlen=each_len) for _ in range(memory_len)]
         self.rate_decay = 0.15
         self.rate_decay_grow = 0.0005
-        self.rate_decay_max = 0.8
+        self.rate_decay_max = 1.0
 
     def length(self):
         return len(self.memories[0])
