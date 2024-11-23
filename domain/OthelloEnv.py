@@ -35,34 +35,21 @@ tried to put {action.cord}
 valid actions were {[i.cord for i in valid_actions(state)]}
 """
         )
-    if is_done(next_state):
-        _, black, white = count(state)
-        reward = (black - white) / SIZE / SIZE * 0.5
-        if black > white:
-            reward += 0.5
-        elif black < white:
-            reward -= 0.5
-        if state.color == Color.WHITE:
-            reward *= -1
-        return next_state, reward, True
-    # x = np.array(next_state.board)
-    # maped = -1.5 * x * x + 2.5 * x
-    # reward_for_black = (maped * reward_mask / reward_mask_sum).sum()
-    # reward = reward_for_black if state.color == Color.BLACK else -reward_for_black
-    return next_state, 0, False
+    return next_state, reward(next_state), is_done(next_state)
 
 
-reward_mask = np.array(
-    [
-        [3, 1, 2, 2, 1, 3],
-        [1, 0, 0, 0, 0, 1],
-        [2, 0, 0, 0, 0, 2],
-        [2, 0, 0, 0, 0, 2],
-        [1, 0, 0, 0, 0, 1],
-        [3, 1, 1, 1, 1, 3],
-    ]
-)
-reward_mask_sum = reward_mask.sum()
+def reward(state: State):
+    if not is_done(state):
+        return 0
+    _, black, white = count(state)
+    reward = (black - white) / SIZE / SIZE * 0.5
+    if black > white:
+        reward += 0.5
+    elif black < white:
+        reward -= 0.5
+    if state.color == Color.WHITE:
+        reward *= -1
+    return reward
 
 
 def put(state: State, action: Action) -> State | None:  # next_state
