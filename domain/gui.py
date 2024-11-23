@@ -24,7 +24,7 @@ def play(
     get_policy: Policy = None,
 ):
     pygame.init()
-    screen = pygame.display.set_mode((600, 600))
+    screen = pygame.display.set_mode((88 + 64 * SIZE, 88 + 64 * SIZE))
     ui_state = UiState(OthelloEnv.reset(), [], [], None)
     while not OthelloEnv.is_done(ui_state.othello_state):
         player = black if ui_state.othello_state.color == Color.BLACK else white
