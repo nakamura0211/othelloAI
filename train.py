@@ -63,7 +63,7 @@ def train():
             agent.sync_network()
         if i % 50 == 0:
             try:
-                agent.model.save(f"/content/drive/My Drive/Colab Notebooks/dqn.keras")
+                agent.save_model(f"/content/drive/My Drive/Colab Notebooks/dqn.keras")
             except:
                 pass
             e = agent.epsilon
@@ -74,8 +74,7 @@ def train():
             agent.epsilon = e
             agent.pb_epsilon = pe
             print(f"\nscore: {t-o}")
-
-            agent.model.save(f"model/dqn{i}.keras")
+            agent.save_model(f"model/dqn{i}.keras")
 
 
 def bench_mark(

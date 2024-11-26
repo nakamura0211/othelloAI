@@ -18,6 +18,7 @@ from keras.src.layers import (
     Lambda,
     Input,
     concatenate,
+    Layer,
 )
 import tensorflow as tf
 from keras.src.losses import (
@@ -76,6 +77,7 @@ class DqnAgent(Agent):
         dueling: bool = True,
         double: bool = True,
         multistep: bool = True,
+        name: str | None = None,
     ):
         self.gamma = 1
         self.pb_epsilon = pb_epsilon
@@ -87,13 +89,19 @@ class DqnAgent(Agent):
         self.learning_rate = 0.000005
         self.dueling = dueling
         self.multistep = multistep
-        self.model = self._build_dueling_model() if dueling else self._build_model()
-        if weights is not None and len(weights) != 0:
-            self.model.set_weights(weights)
-        if double:
-            self.target = (
-                self._build_dueling_model() if dueling else self._build_model()
-            )
+
+        if name is not None:
+            self.model = keras.models.load_model(name)
+            if double:
+                self.target = keras.models.load_model(name)
+        else:
+            self.model = self._build_dueling_model() if dueling else self._build_model()
+            if weights is not None and len(weights) != 0:
+                self.model.set_weights(weights)
+            if double:
+                self.target = (
+                    self._build_dueling_model() if dueling else self._build_model()
+                )
         self.double = double
         self.sync_network()
 
@@ -161,30 +169,9 @@ class DqnAgent(Agent):
         adv = Dropout(0.3)(relu(BatchNormalization()(Dense(512)(adv))))
         adv = Dense(SIZE * SIZE)(adv)
 
-        def subtract_valid_mean(inputs):
-            adv, valid_mask = inputs
-            valid_adv = adv * valid_mask[:, :, 0]
-
-            valid_adv_stop = K.stop_gradient(valid_adv)
-            valid_mask_stop = K.stop_gradient(valid_mask[:, :, 0])
-
-            valid_mean = K.sum(valid_adv_stop, axis=1, keepdims=True) / (
-                K.sum(valid_mask_stop, axis=1, keepdims=True) + K.epsilon()
-            )
-            return adv - valid_mean
-
-        adv_adjusted = Lambda(subtract_valid_mean, output_shape=(SIZE * SIZE,))(
-            [adv, valid_mask]
-        )
+        adv_adjusted = SubtractValidMeanLayer()([adv, valid_mask])
         y = concatenate([v, adv_adjusted])
-        outputs = Activation("tanh")(
-            BatchNormalization()(
-                Lambda(
-                    lambda a: K.expand_dims(a[:, 0], -1) + a[:, 1:],
-                    output_shape=(SIZE * SIZE,),
-                )(y)
-            )
-        )
+        outputs = Activation("tanh")(BatchNormalization()(ExpandAndAddLayer()(y)))
 
         model = Model(inputs=[inputs, valid_mask], outputs=outputs)
 
@@ -449,6 +436,14 @@ class DqnAgent(Agent):
         self.model.save_weights(name)
         return self
 
+    def load_model(self, name):
+        self.model = keras.models.load_model(name)
+        self.target = keras.models.load_model(name)
+        self.sync_network()
+
+    def save_model(self, name):
+        self.model.save(name)
+
 
 class CosineSimilarityLoss(keras.losses.Loss):
     def __init__(self, name="cosine_similarity_loss"):
@@ -689,3 +684,22 @@ class DqnNetwork(Model):
         q, value = self(state)
 
         return q, value
+
+
+class SubtractValidMeanLayer(Layer):
+    def call(self, inputs):
+        adv, valid_mask = inputs
+        valid_adv = adv * valid_mask[:, :, 0]
+
+        valid_adv_stop = K.stop_gradient(valid_adv)
+        valid_mask_stop = K.stop_gradient(valid_mask[:, :, 0])
+
+        valid_mean = K.sum(valid_adv_stop, axis=1, keepdims=True) / (
+            K.sum(valid_mask_stop, axis=1, keepdims=True) + K.epsilon()
+        )
+        return adv - valid_mean
+
+
+class ExpandAndAddLayer(Layer):
+    def call(self, a):
+        return K.expand_dims(a[:, 0], -1) + a[:, 1:]
