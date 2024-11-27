@@ -20,7 +20,7 @@ class Color(IntEnum):
             return Color.BLACK
 
 
-SIZE = 6
+SIZE = 8
 Board = list[list[Color]]
 BoardImage = np.ndarray[np.ndarray[np.ndarray[np.uint8]]]  # (SIZE,SIZE,3)
 
