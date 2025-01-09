@@ -18,12 +18,12 @@ from time import perf_counter
 
 
 class MctsAgent(Agent):
-    num_cpus = 8
+    num_cpus = 7
 
     def __init__(
         self, playout_num: int, verbose: int = 0, use_ray: bool = True
     ) -> None:
-        if not ray.is_initialized:
+        if not ray.is_initialized():
             ray.init(num_cpus=MctsAgent.num_cpus)
         self.playout_num = playout_num
         self.verbose = verbose
@@ -41,7 +41,6 @@ class MctsAgent(Agent):
     def act_with_ray(self, state: State) -> Action:
         root_node = MctsNode([], state, None)
         root_node.expand()
-        root_node = ray.put(root_node)
 
         each_playout_num = self.playout_num // MctsAgent.num_cpus
         refs = [
@@ -49,8 +48,6 @@ class MctsAgent(Agent):
             for _ in range(MctsAgent.num_cpus)
         ]
         nodes: list[MctsNode] = ray.get(refs)
-        a: MctsNode = ray.get([root_node])[0]
-        print(a.print_tree(0))
         for node in nodes:
             for i in range(len(node.children)):
                 root_node.children[i].chosen += node.children[i].chosen
@@ -64,6 +61,7 @@ class MctsAgent(Agent):
             else range(self.playout_num)
         ):
             root_node.search_node_must_be_playouted().playout()
+        print(root_node.print_tree(0))
         return max(root_node.children, key=lambda c: c.chosen).action
 
     def act(self, state: State) -> Action:
@@ -72,6 +70,21 @@ class MctsAgent(Agent):
         else:
             action = self.act_without_ray(state)
         return action
+
+    def policy(self, state):
+        root_node = MctsNode([], state, None)
+        for _ in (
+            tqdm.tqdm(range(self.playout_num))
+            if self.verbose > 0
+            else range(self.playout_num)
+        ):
+            root_node.search_node_must_be_playouted().playout()
+        root_node.print_tree(0)
+        policy = np.zeros((SIZE * SIZE))
+        for child in root_node.children:
+            policy[child.action.index] = child.chosen
+        policy = policy / policy.max()
+        return policy * 2 - 1
 
 
 class McAgent(Agent):
@@ -144,7 +157,7 @@ class MctsNode:
         return result
 
     def print_tree(self, depth):
-        print("  " * depth + f"win={self.wins} chosen={self.chosen}")
+        print("  " * depth + f"({self.action}) win={self.wins} chosen={self.chosen}")
         for child in self.children:
             child.print_tree(depth + 1)
 
@@ -152,11 +165,11 @@ class MctsNode:
         N = 1
         for i in range(len(self.parents[-1].children)):
             N += self.parents[-1].children[i].chosen
-        return self.wins / (self.chosen + 1) + math.sqrt(
-            math.log(N) / (self.chosen + 1)
+        return (self.wins) / (self.chosen + 1) + math.sqrt(
+            2 * math.log(N) / (self.chosen + 1)
         )
 
-    def choise_best_child(self) -> Self:
+    def choose_best_child(self) -> Self:
         return max(self.children, key=lambda c: c.uct())
 
     # self.childrenに子孫追加
@@ -168,13 +181,12 @@ class MctsNode:
             child = MctsNode(new_parents, next_state, action)
             self.children.append(child)
 
-    # tannsaku\お探す
     def search_node_must_be_playouted(self):
         nx_child = self
         while nx_child.children != []:
-            nx_child = nx_child.choise_best_child()
+            nx_child = nx_child.choose_best_child()
 
-        if nx_child.chosen > 20:
+        if nx_child.chosen > 100:
             nx_child.expand()
         return nx_child
 
@@ -188,7 +200,7 @@ class MctsNode:
         )
         winner = OthelloEnv.winner(result).reverse()
         _, b, w = OthelloEnv.count(result)
-        reward = abs(b - w) / SIZE / SIZE
+        reward = 1  # abs(b - w) / SIZE / SIZE
 
         self.chosen += 1
         if winner == self.state.color:

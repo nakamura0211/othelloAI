@@ -350,18 +350,17 @@ class DqnAgent(Agent):
             if not exp.done:
                 nx_valid = {a.index for a in OthelloEnv.valid_actions(exp.next_state)}
                 if self.double:
-                    best_nx_act = np.argmax(
-                        [v if i in nx_valid else -2 for i, v in enumerate(y_next[i])]
-                    )
+                    best_nx_act = (
+                        np.argmin
+                        if exp.state.color == exp.next_state.color
+                        else np.argmax
+                    )([v if i in nx_valid else 2 for i, v in enumerate(y_next[i])])
                     nx_act_value = y_next_target[i][best_nx_act]
                 else:
-                    nx_act_value = np.amax(
-                        [v if i in nx_valid else -2 for i, v in enumerate(y_next[i])]
-                    )
-                if exp.state.color == exp.next_state.color:
-                    target = exp.reward + self.gamma * nx_act_value
-                else:
-                    target = exp.reward - self.gamma * nx_act_value
+                    nx_act_value = (
+                        np.amin if exp.state.color == exp.next_state.color else np.amax
+                    )([v if i in nx_valid else 2 for i, v in enumerate(y_next[i])])
+                target = exp.reward + self.gamma * nx_act_value
             else:
                 target = exp.reward
 
