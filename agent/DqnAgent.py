@@ -28,6 +28,7 @@ from keras.src.losses import (
     huber,
     Huber,
 )
+from keras.api.regularizers import l2
 from keras.src.activations import relu
 from keras.src.initializers import HeNormal
 from keras.src.optimizers import Adam, SGD
@@ -86,7 +87,7 @@ class DqnAgent(Agent):
         self.epsilon = epsilon
         self.epsilon_min = 0.01
         self.epsilon_decay = 0.9994
-        self.learning_rate = 0.03
+        self.learning_rate = 0.000005
         self.dueling = dueling
         self.multistep = multistep
 
@@ -124,16 +125,19 @@ class DqnAgent(Agent):
                 )(inputs)
             )
         )
-        x = relu(
-            BatchNormalization()(
-                Conv2D(
-                    512,
-                    3,
-                    padding="same",
-                    use_bias=False,
-                    kernel_initializer=kernel_initializer,
-                )(x)
+        x = (
+            relu(
+                BatchNormalization()(
+                    Conv2D(
+                        512,
+                        3,
+                        padding="same",
+                        use_bias=False,
+                        kernel_initializer=kernel_initializer,
+                    )(x)
+                )
             )
+            + x
         )
         x = relu(
             BatchNormalization()(
@@ -442,6 +446,43 @@ class DqnAgent(Agent):
 
     def save_model(self, name):
         self.model.save(name)
+
+
+class ResBlock(tf.keras.layers.Layer):
+
+    def __init__(self, filters, use_bias, padding):
+        super(ResBlock, self).__init__()
+
+        self.conv1 = Conv2D(
+            filters,
+            kernel_size=3,
+            padding="same",
+            use_bias=use_bias,
+            kernel_regularizer=l2(0.001),
+            kernel_initializer="he_normal",
+        )
+        self.bn1 = BatchNormalization()
+        self.conv2 = Conv2D(
+            filters,
+            kernel_size=3,
+            padding="same",
+            use_bias=use_bias,
+            kernel_regularizer=l2(0.001),
+            kernel_initializer="he_normal",
+        )
+        self.bn2 = BatchNormalization()
+
+    def call(self, x, training=False):
+
+        inputs = x
+
+        x = relu(self.bn1(self.conv1(x), training=training))
+
+        x = self.bn2(self.conv2(x), training=training)
+        x = x + inputs  #: skip connection
+        x = relu(x)
+
+        return x
 
 
 class CosineSimilarityLoss(keras.losses.Loss):
