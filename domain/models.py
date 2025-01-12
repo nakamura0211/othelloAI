@@ -38,6 +38,9 @@ class State:
             return State((image[:, :, 0] * 2 + image[:, :, 1]).tolist(), color)
 
     def to_image(self) -> BoardImage:
+        x = np.array(self.board)
+        return -x * x * 3 / 2 + x * 5 / 2
+        return self.board
         b = np.array(self.board)
         me = b == self.color
         opp = b == self.color.reverse()
