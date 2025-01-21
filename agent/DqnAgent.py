@@ -113,7 +113,7 @@ class DqnAgent(Agent):
     def _build_dueling_model(self):
         kernel_initializer = HeNormal()
         inputs = Input(shape=(SIZE, SIZE, 1), name="board_image")
-        valid_mask = Input(shape=(SIZE * SIZE, 1), name="valid_mask")
+        valid_mask = self._make_valid_mask(State.from_image(inputs, Color.BLACK))
         x = relu(
             BatchNormalization()(
                 Conv2D(
