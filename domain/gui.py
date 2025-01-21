@@ -191,6 +191,7 @@ def _draw(screen, ui_state: UiState, worker: Worker):
             (180, 180, 0),
             Rect(44 + 64 * x, 44 + 64 * y, 64, 64),
         )
+
     if worker is not None and worker.get_policy is not None:
         if (
             ui_state.policy_cache is None
@@ -198,7 +199,8 @@ def _draw(screen, ui_state: UiState, worker: Worker):
         ):
             # 枠線
             worker.calc_policy_func()
-        else:
+        elif ui_state.othello_state.color == Color.BLACK:
+
             policy = ui_state.policy_cache[1]
             for y in range(SIZE):
                 for x in range(SIZE):
